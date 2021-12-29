@@ -1,0 +1,23 @@
+{
+  "name": "k8s-generic-watch",
+  "version": "1.0.0",
+  "description": "Catches K8s API objects like k8s client informers but support arbitrary API groups and object",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "K8s",
+    "list&watch"
+  ],
+  "type": "module",
+  "module": "es2022",
+  "author": "LIU Lei",
+  "license": "ISC",
+  "dependencies": {
+    "node-fetch": "^3.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^17.0.5"
+  }
+}
