@@ -16,6 +16,12 @@ API Object Watcher的目标是通用API资源对象的状态监控和支撑高�
 ## 开始使用
 ### 配置
  TODO
+ 1. 读取配置文件：设置环境变量`CONFIG_FILE_PATH`为配置文件位置
+ 2. 配置文件配置项：
+    配置文件使用JSON格式，可以通过ConfigMap作为Volume挂载进容器中
+ ```json
+
+ ```
 
 
 ### API 说明
