@@ -1,4 +1,5 @@
 import { ClientHttp2Session } from "http2";
+import { K8sClient } from "./K8sClient";
 
 /**
  * Group Version Kind in Kubernetes
@@ -18,7 +19,6 @@ export class WatcherOptions {
     namespace: string;
     apiServerUrl: string;
 
-
     additionalParams: Map<String, String>;
 
     constructor(apiServerUrl: string, namespace: string) {
@@ -37,7 +37,7 @@ export class K8sApiObjectWatcher {
     private options: WatcherOptions;
     private gvk: GVK;
     private params: Map<String, String>;
-    private K8sClient: ClientHttp2Session;
+    private K8sClient: K8sClient;
     
     private started: boolean = false;
 
@@ -45,7 +45,6 @@ export class K8sApiObjectWatcher {
         
     }
     
-
     public start() {
         
     }

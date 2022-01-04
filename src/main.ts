@@ -1,8 +1,13 @@
 import fetch from "node-fetch";
 import * as https from "https";
 import * as fs from "fs";
+import * as http2 from "http2";
+import { SecureContextOptions } from "tls";
 
-main();
+
+// main();
+// Exec();
+
 
 function analizeAPIObject(objStr: string) {
     let obj = JSON.parse(objStr);
@@ -28,11 +33,11 @@ async function main() {
             method: "GET",
         }
     );
-    
+
     resp.headers.forEach((value, name) => {
         console.log(name, value);
     });
-    
+
     resp.body.eventNames().forEach(event => {
         console.log("body event: ", event);
     })
@@ -67,4 +72,38 @@ async function main() {
         console.log("body event: ", event);
     })
     
+}
+
+function Exec() {
+    let k8sUrl = "https://k8s.office.linkinghack.com:8443";
+
+    const tlsOptions: SecureContextOptions = {
+        key: fs.readFileSync("../configs/client.key"),
+        cert: fs.readFileSync("../configs/client.crt"),
+        ca: fs.readFileSync("../configs/ca.crt"),
+    }
+    
+    let client = http2.connect(k8sUrl, tlsOptions);
+
+    const {
+        HTTP2_HEADER_PATH,
+        HTTP2_HEADER_STATUS
+    } = http2.constants;
+    
+    const respStream = client.request({ [HTTP2_HEADER_PATH]: '/api/v1/namespaces?watch=true' });
+
+    console.log(`HTTP2_HEADER_PATH: ${HTTP2_HEADER_PATH}`);
+    
+    respStream.on('response', (headers) => {
+        console.log(`headers: ${JSON.stringify(headers)}`);
+        respStream.on('data', (chunk) => {
+            console.log(`HTTP2 message received: `);
+            analizeAPIObject(chunk.toString());
+        });
+        
+        respStream.on('end', () => {
+            console.log(` HTTP2 end`);
+        });
+    })
+
 }

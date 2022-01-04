@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "es2021",
-    "module": "es2022",
+    "module": "commonjs",
     "moduleResolution": "node",
     "noImplicitAny": false,
     "removeComments": true,
@@ -10,7 +10,7 @@
     "emitDecoratorMetadata": true,
     "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": "./node_modules",
+    "baseUrl": "./src",
     "lib": [
       "esnext"
     ],
@@ -18,14 +18,8 @@
   "include": [
     "src/**/*.ts",
   ],
-  "buildOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "baseUrl": "./node_modules",
-    "paths": {
-      "*": [
-        "*",
-      ],
-    },
-  },
+  "exclude": [
+    "node_modules",
+    "dist",
+  ],
 }

@@ -10,8 +10,7 @@
     "K8s",
     "list&watch"
   ],
-  "type": "module",
-  "module": "es2022",
+  "type": "commonjs",
   "author": "LIU Lei",
   "license": "ISC",
   "dependencies": {

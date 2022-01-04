@@ -54,19 +54,19 @@ export class K8sClient {
                 this.createHttp2ClientWithClientCert(apiserverUrl, this.options.clientCertPath, this.options.clientKeyPath, this.options.caCertPath);
             }
         } catch(e) {
-            log.error("Failed to create K8sClient: " + e);
+            log.fatal("Failed to create K8sClient. " + e);
             throw e;
         }
     }
 
-    public request(outgoingHeaders: http2.OutgoingHttpHeaders): http2.ClientHttp2Stream {
+    public request(path:string,  outgoingHeaders: http2.OutgoingHttpHeaders): http2.ClientHttp2Stream {
         if (!outgoingHeaders) {
             outgoingHeaders = {};
         }
         if (this.options.authType == AuthType.BearerToken) {
             outgoingHeaders[http2.constants.HTTP2_HEADER_AUTHORIZATION] = this.token;
         }
-
+        outgoingHeaders[http2.constants.HTTP2_HEADER_PATH] = path;
         return this.http2Client.request(outgoingHeaders);
     }
 
