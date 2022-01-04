@@ -3,6 +3,8 @@
     "target": "es2021",
     "module": "commonjs",
     "moduleResolution": "node",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
     "noImplicitAny": false,
     "removeComments": true,
     "preserveConstEnums": true,
@@ -12,7 +14,8 @@
     "outDir": "./dist",
     "baseUrl": "./src",
     "lib": [
-      "esnext"
+      "esnext",
+      "ES2021"
     ],
   },
   "include": [

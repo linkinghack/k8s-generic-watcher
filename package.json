@@ -4,7 +4,10 @@
   "description": "Catches K8s API objects like k8s client informers but support arbitrary API groups and object",
   "main": "main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "tsc && node dist/tests/UnitTests.js",
+    "serve": "tsc && node dist/main.js",
+    "build-image": "docker build -t k8s-generic-watch .",
+    "bulid": "tsc"
   },
   "keywords": [
     "K8s",
@@ -14,7 +17,7 @@
   "author": "LIU Lei",
   "license": "ISC",
   "dependencies": {
-    "node-fetch": "^3.1.0",
+    "node-fetch": "^2.6.6",
     "tslog": "^3.3.1"
   },
   "devDependencies": {

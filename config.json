@@ -1,0 +1,24 @@
+{
+    "MinLogLevel": "trace",
+    "LogType": "pretty",
+    "ApiServerUrl": "https://127.0.0.1:8443",
+    "InitialWatchingResources": [
+        {
+            "group": "apps",
+            "version": "v1",
+            "kind": "deployments"
+        },
+        {
+            "group": "core",
+            "version": "v1",
+            "kind": "pods"
+        }
+    ],
+    "ListenAddress": "0.0.0.0:9000",
+    "AutoInclusterConfig": false,
+    "AuthType": "ClientCert",
+    "TokenFilePath": "/var/run/secrets/kubernetes.io/serviceaccount/token",
+    "ClientCertPath": "/etc/kubernetes/pki/apiserver.crt",
+    "ClientKeyPath": "/etc/kubernetes/pki/apiserver.key",
+    "CaCertPath": "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+}

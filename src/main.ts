@@ -3,11 +3,14 @@ import * as https from "https";
 import * as fs from "fs";
 import * as http2 from "http2";
 import { SecureContextOptions } from "tls";
-
+import { GlobalConfig } from "./configs";
 
 // main();
 // Exec();
-
+printConfigFileExample()
+function printConfigFileExample() {
+    console.log( JSON.stringify(new GlobalConfig()) );
+}
 
 function analizeAPIObject(objStr: string) {
     let obj = JSON.parse(objStr);
