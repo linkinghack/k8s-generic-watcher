@@ -1,24 +1,25 @@
 {
     "MinLogLevel": "trace",
-    "LogType": "pretty",
-    "ApiServerUrl": "https://127.0.0.1:8443",
-    "InitialWatchingResources": [
-        {
-            "group": "apps",
-            "version": "v1",
-            "kind": "deployments"
-        },
-        {
-            "group": "core",
-            "version": "v1",
-            "kind": "pods"
-        }
-    ],
+    "LogType": "json",
     "ListenAddress": "0.0.0.0:9000",
+    "InitialWatchingResources": [
+      {
+        "group": "apps",
+        "version": "v1",
+        "kind": "deployments"
+      },
+      {
+        "group": "core",
+        "version": "v1",
+        "kind": "pods"
+      }
+    ],
+    "InitialWebHookUrls": ["http://localhost:8080/k8sResourceUpdated"],
     "AutoInclusterConfig": false,
+    "ApiServerUrl": "https://127.0.0.1:8443",
     "AuthType": "ClientCert",
     "TokenFilePath": "/var/run/secrets/kubernetes.io/serviceaccount/token",
     "ClientCertPath": "/etc/kubernetes/pki/apiserver.crt",
     "ClientKeyPath": "/etc/kubernetes/pki/apiserver.key",
     "CaCertPath": "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
-}
+  }

@@ -6,6 +6,7 @@ export enum GlobalConfigNames {
     LogType = "LogType",
     ApiServerUrl = "ApiServerUrl",
     InitialWatchingResources = "InitialWatchingResources",
+    InitialWebHookUrls = "InitialWebHookUrls",
     AutoInclusterConfig = "AutoInclusterConfig",
     AuthType = "AuthType",
     TokenFilePath = "TokenFilePath",
@@ -17,11 +18,16 @@ export enum GlobalConfigNames {
 export class GlobalConfig {
     MinLogLevel: string = "trace"; // silly, trace, debug, info, warn, error, fatal
     LogType: string = "json"; // json, pretty, hidden
-    ApiServerUrl: string = "https://127.0.0.1:8443";
+    ListenAddress: string = "0.0.0.0:9000"; // Watcher API server listen address
+
+    // Watcher configs
     InitialWatchingResources: Array<GVK> = [new GVK("apps", "v1", "deployments"), new GVK("core", "v1", "pods")];
-    ListenAddress: string = "0.0.0.0:9000";
+    InitialWebHookUrls: Array<string>  = [ "http://localhost:8080/k8sResourceUpdated" ];
+
+    // K8sClient configs
     AutoInclusterConfig: boolean = false;
-    AuthType: string = "ClientCert"; 
+    ApiServerUrl: string = "https://127.0.0.1:8443";
+    AuthType: string = "ClientCert";
     TokenFilePath: string = "/var/run/secrets/kubernetes.io/serviceaccount/token";
     ClientCertPath: string = "/etc/kubernetes/pki/apiserver.crt";
     ClientKeyPath: string = "/etc/kubernetes/pki/apiserver.key";
