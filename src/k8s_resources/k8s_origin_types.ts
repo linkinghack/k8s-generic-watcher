@@ -3,7 +3,6 @@
  *     /api/v1
  *     /apis/apiextensions.k8s.io/v1
  */
-import {Api_group_detector} from "./api_group_detector";
 
 export interface APIResourceList {
     kind: string;
@@ -55,4 +54,8 @@ export function IsApiResource(obj: Object): boolean {
 
 export function IsApiResourceList(obj: Object): boolean {
     return (obj && obj.hasOwnProperty("kind") && obj.hasOwnProperty("apiVersion") && obj.hasOwnProperty("groupVersion") && obj.hasOwnProperty("resources"));
+}
+
+export function IsApiGroupList(obj: Object): boolean {
+    return (obj && obj.hasOwnProperty("kind") && obj.hasOwnProperty("apiVersion") && obj.hasOwnProperty("groups"))
 }

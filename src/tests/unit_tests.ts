@@ -1,3 +1,5 @@
-import k8sClientTests from './k8s_client_test';
+import {testK8sClientCreation} from './k8s_client_test';
+import {testGetApiGroups} from "./api_group_detector_test";
 
-k8sClientTests.testK8sClientCreation();
+testK8sClientCreation()
+testGetApiGroups();

@@ -188,9 +188,9 @@ export class K8sClient {
                 }
             );
         });
-        this.http2Client.setTimeout(10000, () => {
-            log.warn("There is no activity on the connection.");
-        });
+        // this.http2Client.setTimeout(10000, () => {
+        //     log.warn("There is no activity on the connection.");
+        // });
 
         if (that._options.autoKeepAlive) {
             setInterval(() => {
