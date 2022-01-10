@@ -1,112 +1,63 @@
-import fetch from "node-fetch";
-import * as https from "https";
-import * as fs from "fs";
-import * as http2 from "http2";
-import { SecureContextOptions } from "tls";
-import { GlobalConfig } from "./configs";
 
-// main();
-// Exec();
-printConfigFileExample()
-function printConfigFileExample() {
-    console.log( JSON.stringify(new GlobalConfig()) );
-}
+// 1. 加载配置文件
 
-function analizeAPIObject(objStr: string) {
-    let obj = JSON.parse(objStr);
-    console.log(`API Object: type=${obj.type}, kind=${obj.object.kind}, object=${obj.object.metadata.name}`);
-}
 
-async function main() {
-    let k8sUrl = "https://k8s.office.linkinghack.com:8443";
+// 2. 读取Auth配置，尝试创建K8s API 连接，创建K8sClient
 
-    const https_opts: https.AgentOptions = {
-        key: fs.readFileSync("../configs/client.key"),
-        cert: fs.readFileSync("../configs/client.crt"),
-        ca: fs.readFileSync("../configs/ca.crt"),
-        keepAlive: true,
-        timeout: 0,
-    }
-    
-    let agent = new https.Agent(https_opts);
-    
-    let resp = await fetch(k8sUrl + "/api/v1/namespaces?watch=true",
-        { 
-            agent: agent,
-            method: "GET",
-        }
-    );
 
-    resp.headers.forEach((value, name) => {
-        console.log(name, value);
-    });
 
-    resp.body.eventNames().forEach(event => {
-        console.log("body event: ", event);
-    })
-    
+// 3. 创建配置指定
 
-    let strBuf = new String();
-    resp.body.on("readable", () => {
-        console.log("data received");
-        resp.body.pause();
-    
-        let chunk = resp.body.read();
-        let str = String(chunk);
-        
-        for (; str.length > 0; ){
-            let endPos = str.indexOf("\n", 0);
-            if (endPos < 0){
-                strBuf += str;
-                str = ""; // end this loop
-            } else {
-                strBuf += str.substring(0, endPos + 1);
-                analizeAPIObject(strBuf.toString());
-                strBuf = "";
-                str = str.substring(endPos + 1);
-            }
-        }
-    
-        resp.body.resume();
-    });
-    
-    
-    resp.body.eventNames().forEach(event => {
-        console.log("body event: ", event);
-    })
-    
-}
 
-function Exec() {
-    let k8sUrl = "https://k8s.office.linkinghack.com:8443";
+import jsonpath from "jsonpath"
+import yaml from "yaml";
+let s = new Set<string>();
+let j = `{"name": "linking", "detail": {"college": "TYUT", "id":"linkinghack", "name": "LeiLiu"}}`
+let obj = JSON.parse(j);
+let college = jsonpath.query(obj, "$.detail.college")
+let names = jsonpath.query(obj, "$..name")
 
-    const tlsOptions: SecureContextOptions = {
-        key: fs.readFileSync("../configs/client.key"),
-        cert: fs.readFileSync("../configs/client.crt"),
-        ca: fs.readFileSync("../configs/ca.crt"),
-    }
-    
-    let client = http2.connect(k8sUrl, tlsOptions);
+console.log("college: ", college);
+console.log("names: ", names)
+console.log("age: ", jsonpath.query(obj, "$.detail.age"))
 
-    const {
-        HTTP2_HEADER_PATH,
-        HTTP2_HEADER_STATUS
-    } = http2.constants;
-    
-    const respStream = client.request({ [HTTP2_HEADER_PATH]: '/api/v1/namespaces?watch=true' });
 
-    console.log(`HTTP2_HEADER_PATH: ${HTTP2_HEADER_PATH}`);
-    
-    respStream.on('response', (headers) => {
-        console.log(`headers: ${JSON.stringify(headers)}`);
-        respStream.on('data', (chunk) => {
-            console.log(`HTTP2 message received: `);
-            analizeAPIObject(chunk.toString());
-        });
-        
-        respStream.on('end', () => {
-            console.log(` HTTP2 end`);
-        });
-    })
 
-}
+let ym = `
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority: /Users/liulei/.minikube/ca.crt
+    extensions:
+    - extension:
+        last-update: Mon, 10 Jan 2022 20:48:39 CST
+        provider: minikube.sigs.k8s.io
+        version: v1.24.0
+      name: cluster_info
+    server: https://172.16.67.13:8443
+  name: minikube
+contexts:
+- context:
+    cluster: minikube
+    extensions:
+    - extension:
+        last-update: Mon, 10 Jan 2022 20:48:39 CST
+        provider: minikube.sigs.k8s.io
+        version: v1.24.0
+      name: context_info
+    namespace: default
+    user: minikube
+  name: minikube
+current-context: minikube
+kind: Config
+preferences: {}
+users:
+- name: minikube
+  user:
+    client-certificate: /Users/liulei/.minikube/profiles/minikube/client.crt
+    client-key: /Users/liulei/.minikube/profiles/minikube/client.key
+`
+
+let yamlObj = yaml.parse(ym)
+console.log(yamlObj)
+console.log(yamlObj["current-context"])
