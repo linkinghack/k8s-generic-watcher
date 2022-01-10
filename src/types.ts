@@ -5,13 +5,7 @@
 //  and KubeConfig for using a kubeconfig file specified in `KUBECONFIG` environment variable.
 // export const AUTH_TYPE_TOKEN = "BearerToken";
 // export const AUTH_TYPE_CERT = "ClientCertificate";
-export enum AuthType {
-    BearerToken = "BearerToken",
-    ClientCertificate = "ClientCertificate",
-    KubeConfig = "KubeConfig"
-}
-
-export enum DefaultK8sGroup {
-    Core = "core",
-    Apps = "apps",
-}
+export const
+    AuthTypeBearerToken = "BearerToken",
+    AuthTypeClientCertificate = "ClientCertificate",
+    AuthTypeKubeConfig = "KubeConfig"

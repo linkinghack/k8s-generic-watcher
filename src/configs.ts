@@ -1,5 +1,5 @@
 import * as fs from "fs";
-import { GVK } from "./K8sApiResourceWatcher";
+import {GVK} from "./k8s_resources/inner_types";
 
 export enum GlobalConfigNames {
     MinLogLevel = "MinLogLevel",
@@ -24,7 +24,7 @@ export class GlobalConfig {
     InitialWatchingResources: Array<GVK> = [new GVK("apps", "v1", "deployments"), new GVK("core", "v1", "pods")];
     InitialWebHookUrls: Array<string>  = [ "http://localhost:8080/k8sResourceUpdated" ];
 
-    // K8sClient configs
+    // K8s_client configs
     AutoInclusterConfig: boolean = false;
     ApiServerUrl: string = "https://127.0.0.1:8443";
     AuthType: string = "ClientCert";
@@ -57,4 +57,9 @@ export default {
     GlobalConfig,
     GetConfig,
     LoadConfig,
+    PrintConfigFileExample
+}
+
+function PrintConfigFileExample() {
+    console.log( JSON.stringify(new GlobalConfig()) );
 }

@@ -1,6 +1,6 @@
 {
     "MinLogLevel": "trace",
-    "LogType": "json",
+    "LogType": "pretty",
     "ListenAddress": "0.0.0.0:9000",
     "InitialWatchingResources": [
       {
