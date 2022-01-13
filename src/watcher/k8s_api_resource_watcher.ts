@@ -1,4 +1,4 @@
-import { K8sClient } from "./k8s_client";
+import {K8sClient} from "./k8s_client";
 import {GVK} from "../k8s_resources/inner_types";
 
 

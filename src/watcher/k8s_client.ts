@@ -11,6 +11,7 @@ import {SecureContextOptions} from "node:tls";
 import {setInterval} from "node:timers";
 import logger from "../logger";
 import yaml from "yaml";
+import {homedir} from "os";
 
 const log = logger.getChildLogger({name: "K8sClient"});
 
@@ -105,6 +106,9 @@ export class K8sClient {
         if (!outgoingHeaders) {
             outgoingHeaders = {};
         }
+        if (!outgoingHeaders[http2.constants.HTTP2_HEADER_METHOD]) {
+            outgoingHeaders[http2.constants.HTTP2_HEADER_METHOD] = http2.constants.HTTP2_METHOD_GET
+        }
         if (this._options.authType == types.AuthTypeBearerToken) {
             outgoingHeaders[http2.constants.HTTP2_HEADER_AUTHORIZATION] = this.token;
         }
@@ -120,7 +124,6 @@ export class K8sClient {
     public async requestOnce(path: string, outgoingHeaders?: http2.OutgoingHttpHeaders): Promise<Result> {
         return new Promise<Result>((resolve, reject) => {
             try {
-
                 let stream = this.request(path, outgoingHeaders);
                 let result = new Result();
                 stream.on('response', (headers, flags) => {
@@ -239,7 +242,7 @@ export class K8sClient {
      * @private
      */
     private createHttp2ClientWithKubeConfig() {
-        let kubeConfigFile = process.env.KUBECONFIG || "~/.kube/config";
+        let kubeConfigFile = process.env.KUBECONFIG || homedir() + "/.kube/config";
         let configFileContent = fs.readFileSync(kubeConfigFile).toLocaleString();
         let config = yaml.parse(configFileContent);
 
