@@ -1,27 +1,13 @@
 /**
  * Group Version Kind in Kubernetes
  */
-export class GVK {
-    _group: string;
-    _version: string;
-    _kind: string;
-    /**
-     * _resourceType is the "resource type" described in the K8 official document.
-     *   such as 'pods', 'deployments', 'namespaces', etc.
-     * ref: https://kubernetes.io/docs/reference/using-api/api-concepts/#standard-api-terminology
-     */
-    _resourceType: string;
+import {APIResource} from "./k8s_origin_types";
+import {ApiGroupVersionToUrl} from "../utils/k8s_name_format";
 
-    constructor(group: string, version: string, kind: string) {
-        this._group = group;
-        this._version = version;
-        this._kind = kind;
-    }
-
-    public ResourceType(): string {
-        // TODO online fetch "resource type" of this GVK
-        return this._resourceType;
-    }
+export interface GVK {
+    group: string;
+    version: string;
+    kind: string;
 }
 
 export class Labels {
@@ -49,4 +35,35 @@ export class Labels {
         })
         return true;
     }
+}
+
+/**
+ * K8s API resource type for caching and indexing
+ */
+export interface ApiResourceCacheType {
+    group: string,
+    version: string,
+    kind: string,
+    /**
+     * _resourceType is the "resource type" described in the K8 official document.
+     *   such as 'pods', 'deployments', 'namespaces', etc.
+     * ref: https://kubernetes.io/docs/reference/using-api/api-concepts/#standard-api-terminology
+     */
+    resource: string,
+    gvk: string, // "<group>/<version>/<kind>"
+    originalApiResource: APIResource
+}
+
+/**
+ * Get GVR of a K8s api resource for API server url.
+ *   Formatted as <group>/<version>/<resource>, like ""
+ * @param apiResource
+ * @constructor
+ */
+export function GetGVR(apiResource: ApiResourceCacheType): string {
+    return `${apiResource.group}/${apiResource.version}/${apiResource.resource}`;
+}
+
+export function GVRUrl(): string {
+    return `${ApiGroupVersionToUrl(this._group, this._version)}/${this._resourceType}`
 }

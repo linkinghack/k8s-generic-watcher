@@ -6,13 +6,12 @@
 
 export interface APIResourceList {
     kind: string;
-    apiVersion: string;
     groupVersion: string;
     resources: Array<APIResource>;
 }
 
 export interface APIResource {
-    name: string;
+    name: string; // resource name, like "pods"
     singularName: string;
     namespaced: boolean;
     kind: string;
@@ -53,7 +52,7 @@ export function IsApiResource(obj: Object): boolean {
 }
 
 export function IsApiResourceList(obj: Object): boolean {
-    return (obj && obj.hasOwnProperty("kind") && obj.hasOwnProperty("apiVersion") && obj.hasOwnProperty("groupVersion") && obj.hasOwnProperty("resources"));
+    return (obj && obj.hasOwnProperty("kind") && obj.hasOwnProperty("groupVersion") && obj.hasOwnProperty("resources"));
 }
 
 export function IsApiGroupList(obj: Object): boolean {

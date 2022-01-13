@@ -2,7 +2,7 @@ import fetch from "node-fetch";
 import * as https from "https";
 import * as fs from "fs";
 import * as http2 from "http2";
-import { SecureContextOptions } from "tls";
+import {SecureContextOptions} from "tls";
 
 
 function analizeAPIObject(objStr: string) {
