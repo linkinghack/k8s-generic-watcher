@@ -5,14 +5,19 @@ export enum GlobalConfigNames {
     MinLogLevel = "MinLogLevel",
     LogType = "LogType",
     ApiServerUrl = "ApiServerUrl",
-    InitialWatchingResources = "InitialWatchingResources",
-    InitialWebHookUrls = "InitialWebHookUrls",
+
     AutoInclusterConfig = "AutoInclusterConfig",
     AuthType = "AuthType",
     TokenFilePath = "TokenFilePath",
     ClientCertPath = "ClientCertPath",
     ClientKeyPath = "ClientKeyPath",
     CaCertPath = "CaCertPath",
+
+    InitialWatchingResources = "InitialWatchingResources",
+    InitialWebHookUrls = "InitialWebHookUrls",
+
+    EnableSyncApiGroups = "EnableSyncApiGroups",
+    ApiGroupsSyncIntervalSecond = "ApiGroupsSyncIntervalSecond"
 }
 
 export class GlobalConfig {
@@ -21,8 +26,12 @@ export class GlobalConfig {
     ListenAddress: string = "0.0.0.0:9000"; // Watcher API server listen address
 
     // Watcher configs
-    InitialWatchingResources: Array<GVK> = [new GVK("apps", "v1", "deployments"), new GVK("core", "v1", "pods")];
+    InitialWatchingResources: Array<GVK> = [{group: "core", version:"v1", kind:"Pod", resourceType: "pods"} as GVK, {group: ""} as GVK];
     InitialWebHookUrls: Array<string>  = [ "http://localhost:8080/k8sResourceUpdated" ];
+
+    // ApiGroup detector configs
+    EnableSyncApiGroups: boolean = true;
+    ApiGroupsSyncIntervalSecond: number = 30;
 
     // K8s_client configs
     AutoInclusterConfig: boolean = false;

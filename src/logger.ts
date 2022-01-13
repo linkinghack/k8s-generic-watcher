@@ -1,5 +1,5 @@
-import { GetConfig, GlobalConfigNames } from "./configs";
-import { Logger } from "tslog";
+import {GetConfig, GlobalConfigNames} from "./configs";
+import {Logger} from "tslog";
 
 // Global logger configuration
 export default new Logger({

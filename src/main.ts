@@ -11,6 +11,7 @@
 
 import jsonpath from "jsonpath"
 import yaml from "yaml";
+
 let s = new Set<string>();
 let j = `{"name": "linking", "detail": {"college": "TYUT", "id":"linkinghack", "name": "LeiLiu"}}`
 let obj = JSON.parse(j);
