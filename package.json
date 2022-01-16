@@ -17,6 +17,7 @@
   "author": "LIU Lei",
   "license": "ISC",
   "dependencies": {
+    "base64-arraybuffer": "^1.0.1",
     "http-status": "^1.5.0",
     "jsonpath": "^1.1.1",
     "multi-index": "^0.0.2",

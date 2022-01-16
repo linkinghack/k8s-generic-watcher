@@ -14,7 +14,7 @@ export class Labels {
     labels: Map<string, string>
 
     constructor(labels: Object) {
-        Object.keys(labels).forEach( (objKey, idx, objKeys) => {
+        Object.keys(labels).forEach((objKey, idx, objKeys) => {
             this.labels.set(objKey, labels[objKey]);
         })
     }

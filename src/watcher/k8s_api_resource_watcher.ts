@@ -19,7 +19,7 @@ export class K8sApiObjectWatcher {
     private gvk: GVK;
     private params: Map<String, String>;
     private _k8sClient: K8sClient;
-    
+
     private started: boolean = false;
 
     constructor(k8sClient: K8sClient, gvk: GVK, options: WatcherOptions) {
@@ -35,9 +35,9 @@ export class K8sApiObjectWatcher {
             }
         }
     }
-    
+
     public start() {
-        
+
     }
 
     public stop() {

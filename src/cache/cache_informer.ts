@@ -10,7 +10,7 @@ export enum WatchEvent {
 /**
  * CacheInformer stores a series of objects of a specific GVK
  * and create indices with field selector and label selector.
- * 
+ *
  * There are some default indices: [.metadata.name
  */
 export class Cache_informer extends EventEmitter {

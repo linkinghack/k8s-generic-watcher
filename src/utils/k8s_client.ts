@@ -12,6 +12,7 @@ import {setInterval} from "node:timers";
 import logger from "../logger";
 import yaml from "yaml";
 import {homedir} from "os";
+import * as Base64 from 'base64-arraybuffer';
 
 const log = logger.getChildLogger({name: "K8sClient"});
 
@@ -30,10 +31,15 @@ export class K8sClientOptions {
 
     tokenFilePath: string;
 
-    // Takes effect only if autoInclusterConfig is false and authType == ATH_TYPE_CERT.
+    // Takes effect only if autoInclusterConfig is false and authType == AuthTypeClientCertificate.
+    //   Set pem file paths or base64 encoded pem
     clientCertPath: string;
+    clientCertDataPemBase64: string;
     clientKeyPath: string;
+    clientKeyDataPemBase64: string;
     caCertPath: string;
+    caCertDataPemBase64: string;
+
 
     // Whether to send application layer requests to keep tcp alive (in addition to set SO_KEEPALIVE=1 which is default enabled)
     autoKeepAlive: boolean = false;
@@ -76,7 +82,15 @@ export class K8sClient {
                         this.createHttp2ClientWithToken(this._apiServerUrl, this._options.tokenFilePath, this._options.caCertPath);
                         break;
                     case types.AuthTypeClientCertificate:
-                        this.createHttp2ClientWithClientCert(this._apiServerUrl, this._options.clientCertPath, this._options.clientKeyPath, this._options.caCertPath);
+                        if (this._options.clientKeyPath.length > 0) {
+                            let pems = this.clientCertsBase64Decode(this._options.clientCertDataPemBase64, this._options.clientKeyDataPemBase64, this._options.caCertDataPemBase64);
+                            this.createHttp2ClientWithClientCertData(this._apiServerUrl, pems.clientCertPem, pems.clientKeyPem, pems.caCertPem);
+                        } else if (this._options.clientKeyPath.length > 0) {
+                            this.createHttp2ClientWithClientCert(this._apiServerUrl, this._options.clientCertPath, this._options.clientKeyPath, this._options.caCertPath);
+                        } else {
+                            log.error("Neither clientKeyPath nor clientKeyData provided");
+                            throw new Error("Neither clientKeyPath nor clientKeyData provided");
+                        }
                         break;
                     case types.AuthTypeKubeConfig:
                         this.createHttp2ClientWithKubeConfig();
@@ -170,12 +184,21 @@ export class K8sClient {
      * @param caCertPath PEM encoded K8s APIServer CA certificate path
      */
     private createHttp2ClientWithClientCert(apiServerUrl: string, clientCertPath: string, clientKeyPath: string, caCertPath: string) {
-        log.info("Creating HTTP2 client with client certificate.", "ApiServer: " + apiServerUrl);
+        log.info("Creating HTTP2 client with client certificate files.", "ApiServer: " + apiServerUrl);
+
+        let key = fs.readFileSync(clientKeyPath)
+        let cert = fs.readFileSync(clientCertPath)
+        let ca = fs.readFileSync(caCertPath)
+        this.createHttp2ClientWithClientCert(apiServerUrl, cert.toString(), key.toString(), ca.toString())
+    }
+
+    private createHttp2ClientWithClientCertData(apiServerUrl: string, clientCertDataPem: string, clientKeyDataPem: string, caCertDataPem: string) {
+        log.info("Creating HTTP2 client with client certificate data.", "ApiServer: " + apiServerUrl);
         let that = this;
         const tlsOptions: SecureContextOptions = {
-            key: fs.readFileSync(clientKeyPath),
-            cert: fs.readFileSync(clientCertPath),
-            ca: fs.readFileSync(caCertPath),
+            key: clientKeyDataPem,
+            cert: clientCertDataPem,
+            ca: caCertDataPem,
         }
 
         this.http2Client = http2.connect(apiServerUrl, tlsOptions, (session, socket) => {
@@ -268,34 +291,58 @@ export class K8sClient {
         // 1. find cluster info (CA cert, api server url)
         let caCertPath: string = "";
         let apiServerUrl: string = "";
+        let caCertDataBase64: string = "";
         (config.clusters as [any]).forEach((cluster, idx, clusters) => {
             if (cluster.name == clusterName) {
                 caCertPath = cluster.cluster["certificate-authority"];
+                caCertDataBase64 = cluster.cluster["certificate-authority-data"];
                 apiServerUrl = cluster.cluster.server;
             }
         })
-        if (!caCertPath || !apiServerUrl) {
+        if (!apiServerUrl || (!caCertPath && !caCertDataBase64)) {
             throw new Error(`Cluster ${clusterName} not found in the kube-config file: ${kubeConfigFile}`);
         }
 
         // 2. find user info (including client cert and client key path)
         let clientCertPath: string = "";
         let clientKeyPath: string = "";
+        let clientCertDataBase64: string = "";
+        let clientKeyDataBase64: string = "";
         (config.users as [any]).forEach((user, idx, users) => {
             if (user.name == userName) {
                 clientCertPath = user.user["client-certificate"];
                 clientKeyPath = user.user["client-key"];
+                clientCertDataBase64 = user.user["client-certificate-data"];
+                clientKeyDataBase64 = user.user["client-key-data"];
             }
         })
-        if (!caCertPath || !clientKeyPath) {
+        if ((!clientCertPath || !clientKeyPath) && (!clientCertDataBase64 || !clientKeyDataBase64)) {
             throw new Error(`User ${userName} not found in the kube-config file: ${kubeConfigFile}`)
         }
 
         // create Http2Client
         this._apiServerUrl = apiServerUrl;
-        this._options.caCertPath = caCertPath;
-        this._options.clientCertPath = clientCertPath;
-        this._options.clientKeyPath = clientKeyPath;
-        this.createHttp2ClientWithClientCert(this._apiServerUrl, this._options.clientCertPath, this._options.clientKeyPath, this._options.caCertPath);
+        if (clientKeyDataBase64.length > 0) {
+            this._options.clientKeyDataPemBase64 = clientKeyDataBase64;
+            this._options.clientCertDataPemBase64 = clientCertDataBase64;
+            this._options.caCertDataPemBase64 = caCertDataBase64;
+            let pems = this.clientCertsBase64Decode(clientCertDataBase64, clientKeyDataBase64, caCertDataBase64);
+            this.createHttp2ClientWithClientCertData(this._apiServerUrl, pems.clientCertPem, pems.clientKeyPem, pems.caCertPem);
+        } else if (clientKeyPath.length > 0) {
+            this._options.caCertPath = caCertPath;
+            this._options.clientCertPath = clientCertPath;
+            this._options.clientKeyPath = clientKeyPath;
+            this.createHttp2ClientWithClientCert(this._apiServerUrl, this._options.clientCertPath, this._options.clientKeyPath, this._options.caCertPath);
+        } else {
+            throw new Error("Neither client-key nor client-key-data provided")
+        }
+    }
+
+    private clientCertsBase64Decode(clientCertBase64: string, clientKeyBase64: string, caCertBase64: string ): {clientCertPem:string, clientKeyPem:string, caCertPem: string} {
+        return {
+            clientCertPem: Buffer.from(Base64.decode(clientCertBase64)).toString('utf8'),
+            clientKeyPem: Buffer.from(Base64.decode(clientKeyBase64)).toString('utf8'),
+            caCertPem: Buffer.from(Base64.decode(caCertBase64)).toString('utf8')
+        }
     }
 }

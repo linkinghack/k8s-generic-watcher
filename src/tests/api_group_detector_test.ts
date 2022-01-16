@@ -22,7 +22,7 @@ export function testGetApiGroupResource() {
             console.log(resource);
             client.close();
         })
-        .catch((e) =>  {
+        .catch((e) => {
             console.log(e)
             client.close();
         })

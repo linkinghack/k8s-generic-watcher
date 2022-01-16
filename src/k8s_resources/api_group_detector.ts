@@ -68,7 +68,7 @@ export class ApiGroupDetector {
             }
         }));
         // default group/versions
-        if (!this._resourcesIdxGroup.has(DefaultK8sGroup.Core)){
+        if (!this._resourcesIdxGroup.has(DefaultK8sGroup.Core)) {
             this.GetApiGroupResources(DefaultK8sGroup.Core, "v1", true);
         }
         if (!this._resourcesIdxGroup.has(DefaultK8sGroup.Apps)) {
@@ -82,7 +82,7 @@ export class ApiGroupDetector {
         }
     }
 
-    public AddGroupVersionToCache(gv: {group: string, version: string}) {
+    public AddGroupVersionToCache(gv: { group: string, version: string }) {
         this._preIndexingGVKs.push(gv);
         this.GetApiGroupResources(gv.group, gv.version, true);
     }
@@ -91,7 +91,7 @@ export class ApiGroupDetector {
         return (await this.GetApiResourceDetailOfGVK(group, version, kind)).resource;
     }
 
-    public async GetApiResourceDetailOfGVK(group: string, version:string, kind:string): Promise<ApiResourceCacheType> {
+    public async GetApiResourceDetailOfGVK(group: string, version: string, kind: string): Promise<ApiResourceCacheType> {
         if (!this._resourcesIdxGVK?.has(CheckedGVK(group, version, kind))) {
             // groupVersion requested for the first time
             log.info("GVK not cached, syncing..");

@@ -26,8 +26,13 @@ export class GlobalConfig {
     ListenAddress: string = "0.0.0.0:9000"; // Watcher API server listen address
 
     // Watcher configs
-    InitialWatchingResources: Array<GVK> = [{group: "core", version:"v1", kind:"Pod", resourceType: "pods"} as GVK, {group: ""} as GVK];
-    InitialWebHookUrls: Array<string>  = [ "http://localhost:8080/k8sResourceUpdated" ];
+    InitialWatchingResources: Array<GVK> = [{
+        group: "core",
+        version: "v1",
+        kind: "Pod",
+        resourceType: "pods"
+    } as GVK, {group: ""} as GVK];
+    InitialWebHookUrls: Array<string> = ["http://localhost:8080/k8sResourceUpdated"];
 
     // ApiGroup detector configs
     EnableSyncApiGroups: boolean = true;
@@ -48,8 +53,8 @@ let configLoaded = false;
 
 export function LoadConfig() {
     // TODO load config from file
-    let configFilePath:string = process.env.CONFIG_FILE_PATH || "./config.json";
-    let configFileContent:string = fs.readFileSync(configFilePath, "utf8");
+    let configFilePath: string = process.env.CONFIG_FILE_PATH || "./config.json";
+    let configFileContent: string = fs.readFileSync(configFilePath, "utf8");
     globalConfig = JSON.parse(configFileContent);
     configLoaded = true;
 }
@@ -70,5 +75,5 @@ export default {
 }
 
 function PrintConfigFileExample() {
-    console.log( JSON.stringify(new GlobalConfig()) );
+    console.log(JSON.stringify(new GlobalConfig()));
 }

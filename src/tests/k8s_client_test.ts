@@ -7,9 +7,12 @@ export function createTestK8sClient() {
         autoInClusterConfig: false,
         authType: "KubeConfig",
         tokenFilePath: "",
-        clientCertPath: "/Users/liulei/.kube/minikube/profiles/minikube/client.crt",
-        clientKeyPath: "/Users/liulei/.kube/minikube/profiles/minikube/client.key",
-        caCertPath: "/Users/liulei/.kube/minikube/ca.crt",
+        clientCertPath: "",
+        clientKeyPath: "",
+        caCertPath: "",
+        caCertDataPemBase64: "",
+        clientCertDataPemBase64: "",
+        clientKeyDataPemBase64:"",
         autoKeepAlive: false,
         autoReconnect: false
     }
