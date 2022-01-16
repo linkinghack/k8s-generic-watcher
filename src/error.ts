@@ -1,8 +1,17 @@
-
-export class GVKNotCachedError extends Error{
+export class GVKNotCachedError extends Error {
     constructor(msg: string) {
         super(msg);
-        Object.setPrototypeOf(this, GVKNotCachedError.prototype)
     }
 }
 
+export class GVKNotFoundError extends Error {
+    constructor(msg: string) {
+        super(msg);
+    }
+}
+
+export class GroupVersionNotFound extends Error {
+    constructor(msg: string) {
+        super(msg);
+    }
+}

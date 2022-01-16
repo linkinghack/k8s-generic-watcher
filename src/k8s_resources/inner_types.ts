@@ -58,12 +58,15 @@ export interface ApiResourceCacheType {
  * Get GVR of a K8s api resource for API server url.
  *   Formatted as <group>/<version>/<resource>, like ""
  * @param apiResource
- * @constructor
  */
 export function GetGVR(apiResource: ApiResourceCacheType): string {
     return `${apiResource.group}/${apiResource.version}/${apiResource.resource}`;
 }
 
-export function GVRUrl(): string {
-    return `${ApiGroupVersionToUrl(this._group, this._version)}/${this._resourceType}`
+/**
+ * Get available url of a specific Api resource to request APIServer.
+ * @param apiResource cached api resource that containing (group, version, king, resource) information
+ */
+export function GVRUrl(apiResource: ApiResourceCacheType): string {
+    return `${ApiGroupVersionToUrl(apiResource.group, apiResource.version)}/${apiResource.resource}`
 }

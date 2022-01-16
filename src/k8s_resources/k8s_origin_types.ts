@@ -5,8 +5,8 @@
  */
 
 export interface APIResourceList {
-    kind: string;
-    groupVersion: string;
+    kind: string; // "APIResourceList"
+    groupVersion: string; // current groupVersion
     resources: Array<APIResource>;
 }
 

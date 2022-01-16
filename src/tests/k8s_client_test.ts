@@ -1,7 +1,6 @@
 import * as http2 from "http2";
-import {K8sClient, K8sClientOptions} from "../watcher/k8s_client";
+import {K8sClient, K8sClientOptions} from "../utils/k8s_client";
 import * as types from "../types"
-
 
 export function createTestK8sClient() {
     let options: K8sClientOptions = {
@@ -18,6 +17,7 @@ export function createTestK8sClient() {
 
     return new K8sClient("", options);
 }
+
 export function testK8sClientCreation() {
     let client = createTestK8sClient();
     let stream = client.request("/api/v1/namespaces/default/pods", {});
@@ -35,9 +35,6 @@ export function testK8sClientCreation() {
 
     stream.on("close", () => {
         console.log("HTTP2 stream close");
+        client.close();
     })
-}
-
-export default {
-    testK8sClientCreation
 }

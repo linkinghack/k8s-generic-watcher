@@ -1,11 +1,17 @@
-import {K8sClient} from "../watcher/k8s_client";
+import {K8sClient} from "../utils/k8s_client";
 import {APIGroup, APIGroupList, APIResourceList, IsApiGroupList, IsApiResourceList} from "./k8s_origin_types";
 import logger from "../logger";
 import status from "http-status"
-import {ApiGroupVersionToUrl, CheckedGroupVersion, CheckedGVK, DefaultUrlPath} from "../utils/k8s_name_format"
+import {
+    ApiGroupVersionToUrl,
+    CheckedGroupVersion,
+    CheckedGVK,
+    DefaultK8sGroup,
+    DefaultUrlPath
+} from "../utils/k8s_name_format"
 import {Container, nonuniqueIndex, NonuniqueIndexError, uniqueIndex} from "multi-index";
 import {ApiResourceCacheType} from "./inner_types";
-import {GVKNotCachedError} from '../error'
+import {GroupVersionNotFound, GVKNotFoundError} from "../error";
 
 const log = logger.getChildLogger({name: "ApiGroupDetector"});
 
@@ -18,7 +24,7 @@ export class ApiGroupDetector {
 
     private _cachedApiGroupResources: Map<string, APIResourceList>;
     private _ApiGroups: Map<string, APIGroup> // <groupName> --> APIGroup
-    private _groupVersionsSet: Set<string>;
+    private _groupVersionsSet: Set<string>; // cache all the groupVersions in ApiServer
 
     // multi-indexed APIResources
     private _ApiResourcesIndex: Container<ApiResourceCacheType>;
@@ -27,11 +33,14 @@ export class ApiGroupDetector {
     private _resourcesIdxKind: ReadonlyMap<string, ReadonlySet<ApiResourceCacheType>>;
     private _resourcesIdxResource: ReadonlyMap<string, ReadonlySet<ApiResourceCacheType>>;
 
-    constructor(client: K8sClient) {
+    // pre-indexing targets
+    private _preIndexingGVKs: Array<{ group: string, version: string }>;
+
+    constructor(client: K8sClient, preIndexingGVKs?: Array<{ group: string, version: string }>) {
         this._k8sClient = client;
 
         this._groupVersionsSet = new Set<string>();
-        this._ApiGroups = new Map<string, APIGroup>();
+        this._ApiGroups = new Map<string, APIGroup>(); // <group> --> APIGroup
         this._cachedApiGroupResources = new Map<string, APIResourceList>();
 
         // set indices on ApiResourceCache
@@ -41,51 +50,87 @@ export class ApiGroupDetector {
         this._resourcesIdxKind = nonuniqueIndex((r: ApiResourceCacheType) => r.kind, 'by kind').on(this._ApiResourcesIndex);
         this._resourcesIdxResource = nonuniqueIndex((r: ApiResourceCacheType) => r.resource, 'by resource').on(this._ApiResourcesIndex);
 
+        if (preIndexingGVKs) {
+            this._preIndexingGVKs = preIndexingGVKs;
+        } else {
+            this._preIndexingGVKs = [];
+        }
         this.BuildCache();
     }
 
     private BuildCache() {
-        this.GetApiGroups();
-        this.GetApiGroupResources("core", "v1", true);
-        this.GetApiGroupResources("apps", "v1", true);
-        this.GetApiGroupResources("apiextensions.k8s.io", "v1", true);
-        return null;
+        this.GetApiGroups(true);
+        this._preIndexingGVKs.forEach((gv => {
+            try {
+                this.GetApiGroupResources(gv.group, gv.version, true);
+            } catch (e) {
+                log.error(`pre-indexing group version fetch failed: ${gv}`, e);
+            }
+        }));
+        // default group/versions
+        if (!this._resourcesIdxGroup.has(DefaultK8sGroup.Core)){
+            this.GetApiGroupResources(DefaultK8sGroup.Core, "v1", true);
+        }
+        if (!this._resourcesIdxGroup.has(DefaultK8sGroup.Apps)) {
+            this.GetApiGroupResources(DefaultK8sGroup.Apps, "v1", true);
+        }
+        if (!this._resourcesIdxGroup.has(DefaultK8sGroup.Batch)) {
+            this.GetApiGroupResources(DefaultK8sGroup.Batch, "v1", true);
+        }
+        if (!this._resourcesIdxGroup.has(DefaultK8sGroup.ApiExtensions)) {
+            this.GetApiGroupResources(DefaultK8sGroup.ApiExtensions, "v1", true);
+        }
     }
 
-    public GetResourceNameOfGVK(group: string, version: string, kind: string): string {
-        if (this._resourcesIdxGVK?.has(CheckedGVK(group, version, kind))) {
-            let resource = this._resourcesIdxGVK.get(CheckedGVK(group, version, kind));
-            return resource.resource;
-        } else {
-            throw new GVKNotCachedError(CheckedGVK(group, version, kind));
+    public AddGroupVersionToCache(gv: {group: string, version: string}) {
+        this._preIndexingGVKs.push(gv);
+        this.GetApiGroupResources(gv.group, gv.version, true);
+    }
+
+    public async GetResourceNameOfGVK(group: string, version: string, kind: string): Promise<string> {
+        return (await this.GetApiResourceDetailOfGVK(group, version, kind)).resource;
+    }
+
+    public async GetApiResourceDetailOfGVK(group: string, version:string, kind:string): Promise<ApiResourceCacheType> {
+        if (!this._resourcesIdxGVK?.has(CheckedGVK(group, version, kind))) {
+            // groupVersion requested for the first time
+            log.info("GVK not cached, syncing..");
+            await this.GetApiGroupResources(group, version, true);
         }
+        if (this._resourcesIdxGVK?.has(CheckedGVK(group, version, kind))) {
+            log.info(`GVK founded: ${CheckedGVK(group, version, kind)}`);
+            return this._resourcesIdxGVK.get(CheckedGVK(group, version, kind));
+
+        }
+        throw new GVKNotFoundError(`${group}/${version}/${kind}`);
     }
 
     /**
      * Get a specific APIGroupResourcesList from local cache or APIServer.
      *   If the requested GV is not cached, but it exists in the GroupVersion set,
      *   will try to get the resources list from APIServer no matter what value of 'sync' is.
-     * @param apiGroup The target APIGroup, like "batch",
+     * @param group The target APIGroup, like "batch",
      * @param version version of this api group, like "v1",
      * @param sync whether force update cache
-     * @constructor
      */
-    public async GetApiGroupResources(apiGroup: string, version: string, sync: boolean): Promise<APIResourceList> {
+    public async GetApiGroupResources(group: string, version: string, sync: boolean): Promise<APIResourceList> {
         let that = this;
-        if (sync || (!this._cachedApiGroupResources?.has(CheckedGroupVersion(apiGroup, version)) && this.HasGroupVersion(apiGroup, version))) {
-            log.info(`Updating cachedApiGroupResources for ${apiGroup}/${version}`)
+        if (sync || (!this._cachedApiGroupResources?.has(CheckedGroupVersion(group, version)) && await this.HasGroupVersion(group, version))) {
+            log.info(`Updating cached ApiGroupResources for ${group}/${version}`)
+
             // fetch and cache apiGroup Resources
-            let result = await this._k8sClient.requestOnce(ApiGroupVersionToUrl(apiGroup, version))
+            let result = await this._k8sClient.requestOnce(ApiGroupVersionToUrl(group, version))
             let parsedObj = JSON.parse(result.body);
+
             if (result.status == status.OK && IsApiResourceList(parsedObj)) {
-                log.info(`GET ${ApiGroupVersionToUrl(apiGroup, version)} success`)
+                log.info(`GET ${ApiGroupVersionToUrl(group, version)} success`)
                 let resourceList = parsedObj as APIResourceList;
                 if (!this._cachedApiGroupResources) {
                     this._cachedApiGroupResources = new Map<string, APIResourceList>();
                 }
 
                 // List cache
-                this._cachedApiGroupResources.set(CheckedGroupVersion(apiGroup, version), resourceList)
+                this._cachedApiGroupResources.set(CheckedGroupVersion(group, version), resourceList)
                 // Detail cache for complex query
                 resourceList.resources.forEach((resource, idx, resources) => {
                     /**
@@ -115,7 +160,7 @@ export class ApiGroupDetector {
                     log.debug(`Indexing resource: GroupVersion: ${resourceList.groupVersion}, Kind: ${resource.kind}, ResourceName: ${resource.name}`)
                     try {
                         that._ApiResourcesIndex.add({
-                            group: apiGroup,
+                            group: group,
                             gvk: `${resourceList.groupVersion}/${resource.kind}`,
                             kind: resource.kind,
                             originalApiResource: resource,
@@ -131,71 +176,67 @@ export class ApiGroupDetector {
                     }
                 })
             } else {
-                log.error(`GET ${ApiGroupVersionToUrl(apiGroup, version)} error`, `:status=${result.status}`, `CheckResponseType IsApiResourceList:${IsApiResourceList(parsedObj)} `)
+                log.error(`GET ${ApiGroupVersionToUrl(group, version)} error`, `:status=${result.status}`, `CheckResponseType IsApiResourceList:${IsApiResourceList(parsedObj)} `)
                 log.debug(parsedObj)
                 throw new Error("Request API server error")
             }
         }
 
-        return new Promise<APIResourceList>((resolve, reject) => {
-            if (this._cachedApiGroupResources.has(CheckedGroupVersion(apiGroup, version))) {
-                resolve(this._cachedApiGroupResources.get(CheckedGroupVersion(apiGroup, version)));
-            } else {
-                log.warn(`Requested GroupVersion not found: ${apiGroup}/${version}`)
-                reject(new Error("GroupVersion not found"))
-            }
-        })
+        if (this._cachedApiGroupResources.has(CheckedGroupVersion(group, version))) {
+            return this._cachedApiGroupResources.get(CheckedGroupVersion(group, version));
+        } else {
+            log.warn(`Requested GroupVersion not found: ${group}/${version}`)
+            throw new GroupVersionNotFound(`${group}/${version}`);
+        }
     }
 
     /**
      * Get all available ApiGroups in the APIServer (that pointed by this._k8sClient)
      *  from local cache or from the APIServer directly.
      * The cache will be updated the first time this method called or the 'update' param is true.
+     * Core group will not included.
      * TODO: auto update this cache periodically.
-     * @param update Whether force update local cache for 'APIGroups' list.
+     * @param sync Whether force update local cache for 'APIGroups' list.
      * @constructor
      */
-    public async GetApiGroups(update: boolean = false): Promise<APIGroupList> {
+    public async GetApiGroups(sync: boolean = false): Promise<APIGroupList> {
         let that = this;
-        return new Promise<APIGroupList>(
-            (resolve, reject) => {
-                if (update || this._cachedApiGroups?.groups?.length < 2) {
-                    this._k8sClient.requestOnce(DefaultUrlPath.ApiGroups)
-                        .then((result) => {
-                            let parsedObj = JSON.parse(result.body)
-                            if (result.status == status.OK && IsApiGroupList(parsedObj)) {
-                                let agl = parsedObj as APIGroupList
-                                log.info("GET /apis to fetch ApiGroups success", "ApiGroups count: " + agl.groups.length)
-                                that._cachedApiGroups = agl
-                                agl.groups.forEach((apiGroup, idx, groups) => {
-                                    // cache all groupVersions for fast check
-                                    apiGroup.versions.forEach((groupVersion, idx, versions) => {
-                                        that._groupVersionsSet.add(groupVersion.groupVersion)
-                                    })
-                                    // cache apiGroup with a map from group name to APIGroup
-                                    that._ApiGroups.set(apiGroup.name, apiGroup);
-                                })
+        if (sync || this._cachedApiGroups?.groups?.length < 2) {
+            let result = await this._k8sClient.requestOnce(DefaultUrlPath.ApiGroups)
+            let parsedObj = JSON.parse(result.body)
+            if (result.status == status.OK && IsApiGroupList(parsedObj)) {
+                let agl = parsedObj as APIGroupList
+                log.info("GET /apis to fetch ApiGroups success.", "ApiGroups count: " + agl.groups.length)
 
-                                // updated
-                                resolve(this._cachedApiGroups);
-                            } else {
-                                log.error("GET /apis error", ":status=" + result.status)
-                                reject("Failed to GET /apis")
-                            }
-                        })
-                        .catch((err) => {
-                            log.error("An error occurred while requesting /apis for fetching ApiGroups", err);
-                            reject(err)
-                        })
-                } else {
-                    log.info("Cached ApiGroups provided without sync")
-                    resolve(this._cachedApiGroups);
-                }
+                that._cachedApiGroups = agl
+                agl.groups.forEach((apiGroup, idx, groups) => {
+                    // cache all groupVersions for fast check
+                    apiGroup.versions.forEach((groupVersion, idx, versions) => {
+                        that._groupVersionsSet.add(groupVersion.groupVersion)
+                    })
+                    // cache apiGroup with a map from group name to APIGroup
+                    that._ApiGroups.set(apiGroup.name, apiGroup);
+                })
+                return agl
+            } else {
+                log.error("GET /apis error", ":status=" + result.status);
+                throw new Error("GET /apis error");
             }
-        )
+        } else {
+            log.info("Cached ApiGroups provided without sync")
+            return this._cachedApiGroups;
+        }
     }
 
-    public HasGroupVersion(group: string, version: string): boolean {
+    public async HasGroupVersion(group: string, version: string): Promise<boolean> {
+        if (group == DefaultK8sGroup.Core) {
+            // TODO: whether check version or not?
+            return true;
+        }
+        if (!this._groupVersionsSet.has(`${group}/${version}`)) {
+            // force sync
+            await this.GetApiGroups(true);
+        }
         return this._groupVersionsSet.has(`${group}/${version}`);
     }
 }
