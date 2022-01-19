@@ -1,12 +1,16 @@
 import {K8sClient} from "../utils/k8s_client";
 import {GVK} from "../k8s_resources/inner_types";
 import {K8sApiObject} from "../k8s_resources/k8s_origin_types";
+import { EventEmitter } from "stream";
+import { ApiGroupDetector } from "k8s_resources/api_group_detector";
 
 
 export interface WatcherOptions {
     // The namespace to watch.
     namespace: string;
-    additionalParams: object;
+    fieldSelector: Map<string, string>;
+    labelSelector: Map<string, string>;
+    additionalParams: Object;
 }
 
 /**
@@ -14,16 +18,20 @@ export interface WatcherOptions {
  * It supports watching for events on an arbitrary API object including CustomerResources.
  * Just provide a GVK (GroupVersionKind) to watch.
  */
-export class K8sApiObjectWatcher {
+export class K8sApiObjectWatcher extends EventEmitter {
     private options: WatcherOptions;
     private gvk: GVK;
     private params: Map<String, String>;
     private _k8sClient: K8sClient;
+    private _apiGroupDetector: ApiGroupDetector;
 
     private _started: boolean = false;
 
-    constructor(k8sClient: K8sClient, gvk: GVK, options: WatcherOptions) {
+
+    constructor(k8sClient: K8sClient, apiGroupDetector: ApiGroupDetector, gvk: GVK, options: WatcherOptions) {
+        super();
         this._k8sClient = k8sClient;
+        this._apiGroupDetector = apiGroupDetector;
         this.gvk = gvk;
         this.options = options;
         this.params = new Map<String, String>();
@@ -37,7 +45,17 @@ export class K8sApiObjectWatcher {
     }
 
     public start() {
+        // 0. get APIResource metadata verify existence of this APIResource, check resource type whether it is namespaced
 
+
+        // 1. find out GVR of specified GVK
+
+        // 2. construct the url and request based on parameters (namespace, fieldSelector, labelSelector)
+
+        // 3. list and get version
+
+        // 4. watch based on version
+        this._k8sClient.requestOnce()
     }
 
     public stop() {

@@ -67,6 +67,9 @@ export function GetGVR(apiResource: ApiResourceCacheType): string {
  * Get available url of a specific Api resource to request APIServer.
  * @param apiResource cached api resource that containing (group, version, king, resource) information
  */
-export function GVRUrl(apiResource: ApiResourceCacheType): string {
+export function GVRUrl(apiResource: ApiResourceCacheType, namespace?: string): string {
+    if (namespace) {
+        return `${ApiGroupVersionToUrl(apiResource.group, apiResource.version)}/namespace/%{namespace}/${apiResource.resource}`;
+    }
     return `${ApiGroupVersionToUrl(apiResource.group, apiResource.version)}/${apiResource.resource}`
 }

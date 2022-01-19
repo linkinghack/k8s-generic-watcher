@@ -39,7 +39,7 @@ export function ApiGroupVersionToUrl(group: string, version: string): string {
 export function CheckedGroupVersion(group: string, version: string) {
     group = group.toLocaleLowerCase();
     version = version.toLocaleLowerCase();
-    if (group == "core") {
+    if (group == "core" || group == "") {
         return version;
     } else {
         return `${group}/${version}`;
