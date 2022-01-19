@@ -1,4 +1,6 @@
 import EventEmitter from "node:events";
+import {GVK} from "../k8s_resources/inner_types";
+import {K8sClient} from "../utils/k8s_client";
 
 export enum WatchEvent {
     ADD = "add",
@@ -13,10 +15,10 @@ export enum WatchEvent {
  *
  * There are some default indices: [.metadata.name
  */
-export class Cache_informer extends EventEmitter {
+export class CacheInformer extends EventEmitter {
+    gvk: GVK;
 
-
-    test() {
+    static Events = {
 
     }
 }
