@@ -3,6 +3,7 @@ import {GVK} from "../k8s_resources/inner_types";
 import {K8sApiObject} from "../k8s_resources/k8s_origin_types";
 import { EventEmitter } from "stream";
 import { ApiGroupDetector } from "k8s_resources/api_group_detector";
+import {ClientHttp2Session, Http2Session} from "http2";
 
 
 export interface WatcherOptions {
@@ -26,7 +27,7 @@ export class K8sApiObjectWatcher extends EventEmitter {
     private _apiGroupDetector: ApiGroupDetector;
 
     private _started: boolean = false;
-
+    private _h2Session: ClientHttp2Session;
 
     constructor(k8sClient: K8sClient, apiGroupDetector: ApiGroupDetector, gvk: GVK, options: WatcherOptions) {
         super();
@@ -44,8 +45,9 @@ export class K8sApiObjectWatcher extends EventEmitter {
         }
     }
 
-    public start() {
+    public async start() {
         // 0. get APIResource metadata verify existence of this APIResource, check resource type whether it is namespaced
+        let resourceDetail = await this._apiGroupDetector.GetApiResourceDetailOfGVK(this.gvk.group, this.gvk.version, this.gvk.kind)
 
 
         // 1. find out GVR of specified GVK
@@ -55,7 +57,7 @@ export class K8sApiObjectWatcher extends EventEmitter {
         // 3. list and get version
 
         // 4. watch based on version
-        this._k8sClient.requestOnce()
+        // this._k8sClient.requestOnce()
     }
 
     public stop() {
@@ -67,7 +69,4 @@ export class K8sApiObjectWatcher extends EventEmitter {
         return null;
     }
 
-    public Watch(version: string) {
-
-    }
 }
