@@ -27,14 +27,14 @@ export interface APIResource {
  *     /apis/apps
  */
 export interface APIGroup {
-    name: string;  // Group name in GVK
+    name: string,  // Group name in GVK
     versions: Array<{
         groupVersion: string,  // like "node.k8s.io/v1", "apps/v1"
         version: string
-    }>;
+    }>,
     preferredVersion: {
-        groupVersion: string;
-        version: string;
+        groupVersion: string,
+        version: string,
     }
 }
 
@@ -42,8 +42,8 @@ export interface APIGroup {
  * Response of /apis
  */
 export interface APIGroupList {
-    kind: string; // "APIGroupList"
-    apiVersion: string; // "v1"
+    kind: string, // "APIGroupList"
+    apiVersion: string, // "v1"
     groups: Array<APIGroup>
 }
 
@@ -76,8 +76,8 @@ export interface ObjectMeta {
     name: string,
     generateName: string,
     namespace: string,
-    labels: Map<string, string>,
-    annotations: Map<string, string>,
+    labels: Object,
+    annotations: Object,
 
     // system
     finalizers: string[],

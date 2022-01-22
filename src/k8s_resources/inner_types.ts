@@ -10,7 +10,7 @@ export interface GVK {
     kind: string;
 }
 
-export class Labels {
+export class KVMatcher {
     labels: Map<string, string>
 
     constructor(labels: Object) {
@@ -27,7 +27,7 @@ export class Labels {
         return this.labels.get(key);
     }
 
-    public Match(r: Labels): boolean {
+    public Match(r: KVMatcher): boolean {
         this.labels.forEach((v, k, m) => {
             if (!r.HasLabel(k) || r.GetLabelValue(k) != v) {
                 return false;
