@@ -44,6 +44,7 @@ export class CacheInformer extends EventEmitter {
 
     constructor(gvk: GVK) {
         super();
+
         this._gvk = gvk;
         this._checkedGvk = CheckedGVK(this._gvk.group, this._gvk.version, this._gvk.kind);
         this._store = new Container<K8sObjectCacheType>();
@@ -54,7 +55,9 @@ export class CacheInformer extends EventEmitter {
     }
 
     /**
-     * Search objects from local cache
+     * Search objects from local cache with optional search criteria.
+     *   All the search criteria are optional. If none of them if specified, it means List all the object of current GVK in all namespaces.
+     *   Multiple search criteria will have the relationship of 'and'.
      * @param uid The ObjectMeta.uid. If specified, other params will be ignored.
      * @param name The ObjectMeta.name to be filtered with.
      * @param namespace The ObjectMeta.namespace to be filtered with.
@@ -122,6 +125,28 @@ export class CacheInformer extends EventEmitter {
             // only field match specified
             return this.CacheTypeObjs2OriginalTypeObjs(this.SetsIntersection(...fieldMatchResults))
         }
+    }
+
+    /**
+     * Search objects by labels or annotations matching. O(n)
+     * @param customKVMatch label selector
+     * @param annotations annotation selector
+     * @param namespace filter namespace
+     */
+    public SearchObjectsByLabelSelector(customKVMatch?: Map<string, string>, annotations?: Map<string, string>, namespace?:string): K8sApiObject[] {
+        let result: K8sApiObject[] = new Array<K8sApiObject>();
+        let filterFn = (obj: K8sObjectCacheType) => {
+            if (obj.labels.Match(new KVMatcher(customKVMatch)) && obj.annotations.Match(new KVMatcher(annotations)) ) {
+                result.push(obj.originalObject);
+            }
+        }
+
+        if (namespace) {
+            this._idxNamespace.get(namespace).forEach(filterFn)
+        } else {
+            this._idxUid.forEach(filterFn)
+        }
+        return result;
     }
 
     private CacheTypeObjs2OriginalTypeObjs(cachedObjs: K8sObjectCacheType[]): K8sApiObject[] {

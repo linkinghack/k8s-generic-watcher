@@ -1,4 +1,5 @@
 import {Container, nonuniqueIndex, uniqueIndex} from "multi-index";
+import {uptime} from "os";
 
 
 interface IndexObject {
@@ -30,4 +31,52 @@ function testMultiIndexCreatingIdx() {
     console.log("uidIdx search result: ", r1)
 }
 
-testMultiIndexCreatingIdx();
+function testMapAndObj() {
+    let map = new Map();
+    let obj = {};
+
+    const benchMarkMapSet = size => {
+        console.time("benchMarkMapSet");
+        for (let i = 0; i < size; i++) {
+            map.set(i + 'hello', i);
+        }
+        console.timeEnd("benchMarkMapSet");
+    };
+
+    const benchMarkMapGet = size => {
+        console.time("benchMarkMapGet");
+        for (let i = 0; i < size; i++) {
+            let x = map.get(i + 'hello');
+        }
+        console.timeEnd("benchMarkMapGet");
+    };
+
+    const benchMarkObjSet = size => {
+        console.time("benchMarkObjSet");
+        for (let i = 0; i < size; i++) {
+            obj[i+'hello'] = i;
+        }
+        console.timeEnd("benchMarkObjSet");
+    };
+
+    const benchMarkObjGet = size => {
+        console.time("benchMarkObjGet");
+        for (let i = 0; i < size; i++) {
+            let x = obj[i+'hello'];
+        }
+        console.timeEnd("benchMarkObjGet");
+    };
+
+    for (let i = 1; i < 100; i+=10) {
+        let size = 20000 * i;
+        benchMarkMapSet(size);
+        benchMarkObjSet(size);
+        benchMarkMapGet(size);
+        benchMarkObjGet(size);
+        console.log(`-------size=${size}-----------`)
+    }
+
+}
+
+// testMultiIndexCreatingIdx();
+testMapAndObj();

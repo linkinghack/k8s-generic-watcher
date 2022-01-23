@@ -28,6 +28,9 @@ export class KVMatcher {
     }
 
     public Match(r: KVMatcher): boolean {
+        if (r.labels.size == 0) {
+            return true;
+        }
         this.labels.forEach((v, k, m) => {
             if (!r.HasLabel(k) || r.GetLabelValue(k) != v) {
                 return false;
