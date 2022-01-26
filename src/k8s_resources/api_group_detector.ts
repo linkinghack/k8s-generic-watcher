@@ -12,9 +12,11 @@ import {
 import {Container, nonuniqueIndex, NonuniqueIndexError, uniqueIndex} from "multi-index";
 import {ApiResourceCacheType} from "./inner_types";
 import {GroupVersionNotFound, GVKNotFoundError} from "../error";
+import {inject, singleton} from "tsyringe";
 
 const log = logger.getChildLogger({name: "ApiGroupDetector"});
 
+@singleton()
 export class ApiGroupDetector {
     private _k8sClient: K8sClient;
 
@@ -22,7 +24,7 @@ export class ApiGroupDetector {
     //   groupVersion -->  APIResourceList
     private _cachedApiGroups: APIGroupList;
 
-    private _cachedApiGroupResources: Map<string, APIResourceList>;
+    private _cachedApiGroupResources: Map<string, APIResourceList>; // CheckedGroupVersion() --> APIResourceList
     private _ApiGroups: Map<string, APIGroup> // <groupName> --> APIGroup
     private _groupVersionsSet: Set<string>; // cache all the groupVersions in ApiServer
 
@@ -34,9 +36,10 @@ export class ApiGroupDetector {
     private _resourcesIdxResource: ReadonlyMap<string, ReadonlySet<ApiResourceCacheType>>;
 
     // pre-indexing targets
-    private _preIndexingGVKs: Array<{ group: string, version: string }>;
+    private _preIndexingGVs: Array<{ group: string, version: string }>;
 
-    constructor(client: K8sClient, preIndexingGVKs?: Array<{ group: string, version: string }>) {
+    constructor(@inject("preIndexingGVs") preIndexingGVs?: Array<{ group: string, version: string }>,
+                @inject(K8sClient) client?: K8sClient) {
         this._k8sClient = client;
 
         this._groupVersionsSet = new Set<string>();
@@ -50,40 +53,44 @@ export class ApiGroupDetector {
         this._resourcesIdxKind = nonuniqueIndex((r: ApiResourceCacheType) => r.kind, 'by kind').on(this._ApiResourcesIndex);
         this._resourcesIdxResource = nonuniqueIndex((r: ApiResourceCacheType) => r.resource, 'by resource').on(this._ApiResourcesIndex);
 
-        if (preIndexingGVKs) {
-            this._preIndexingGVKs = preIndexingGVKs;
+        if (preIndexingGVs) {
+            this._preIndexingGVs = preIndexingGVs;
         } else {
-            this._preIndexingGVKs = [];
+            this._preIndexingGVs = [];
         }
         this.BuildCache();
     }
 
-    private BuildCache() {
-        this.GetApiGroups(true);
-        this._preIndexingGVKs.forEach((gv => {
+    private async BuildCache() {
+        await this.GetApiGroups(true);
+
+        for (let gv of this._preIndexingGVs) {
             try {
-                this.GetApiGroupResources(gv.group, gv.version, true);
+                await this.GetApiGroupResources(gv.group, gv.version, true);
             } catch (e) {
                 log.error(`pre-indexing group version fetch failed: ${gv}`, e);
             }
-        }));
+        }
+
         // default group/versions
         if (!this._resourcesIdxGroup.has(DefaultK8sGroup.Core)) {
-            this.GetApiGroupResources(DefaultK8sGroup.Core, "v1", true);
+            console.log("Groups before BuildCache: ",this._resourcesIdxGroup.keys())
+            await this.GetApiGroupResources(DefaultK8sGroup.Core, "v1", true);
         }
         if (!this._resourcesIdxGroup.has(DefaultK8sGroup.Apps)) {
-            this.GetApiGroupResources(DefaultK8sGroup.Apps, "v1", true);
+            await this.GetApiGroupResources(DefaultK8sGroup.Apps, "v1", true);
         }
         if (!this._resourcesIdxGroup.has(DefaultK8sGroup.Batch)) {
-            this.GetApiGroupResources(DefaultK8sGroup.Batch, "v1", true);
+            await this.GetApiGroupResources(DefaultK8sGroup.Batch, "v1", true);
         }
         if (!this._resourcesIdxGroup.has(DefaultK8sGroup.ApiExtensions)) {
-            this.GetApiGroupResources(DefaultK8sGroup.ApiExtensions, "v1", true);
+            await this.GetApiGroupResources(DefaultK8sGroup.ApiExtensions, "v1", true);
         }
+        console.log("Groups After BuildCache: ",this._resourcesIdxGroup.keys())
     }
 
     public AddGroupVersionToCache(gv: { group: string, version: string }) {
-        this._preIndexingGVKs.push(gv);
+        this._preIndexingGVs.push(gv);
         this.GetApiGroupResources(gv.group, gv.version, true);
     }
 
@@ -100,7 +107,6 @@ export class ApiGroupDetector {
         if (this._resourcesIdxGVK?.has(CheckedGVK(group, version, kind))) {
             log.info(`GVK founded: ${CheckedGVK(group, version, kind)}`);
             return this._resourcesIdxGVK.get(CheckedGVK(group, version, kind));
-
         }
         throw new GVKNotFoundError(`${group}/${version}/${kind}`);
     }
@@ -169,7 +175,7 @@ export class ApiGroupDetector {
                         });
                     } catch (e) {
                         if (e instanceof NonuniqueIndexError) {
-                            log.warn("GVK duplicated", e)
+                            log.warn("GVK duplicated", e.name, e.message)
                         } else {
                             throw e;
                         }
@@ -229,14 +235,14 @@ export class ApiGroupDetector {
     }
 
     public async HasGroupVersion(group: string, version: string): Promise<boolean> {
-        if (group == DefaultK8sGroup.Core) {
+        if (group == DefaultK8sGroup.Core || group == "") {
             // TODO: whether check version or not?
             return true;
         }
-        if (!this._groupVersionsSet.has(`${group}/${version}`)) {
+        if (!this._groupVersionsSet.has(`${CheckedGroupVersion(group, version)}`)) {
             // force sync
             await this.GetApiGroups(true);
         }
-        return this._groupVersionsSet.has(`${group}/${version}`);
+        return this._groupVersionsSet.has(`${CheckedGroupVersion(group, version)}`);
     }
 }
