@@ -1,25 +1,35 @@
 {
-    "MinLogLevel": "trace",
-    "LogType": "pretty",
-    "ListenAddress": "0.0.0.0:9000",
-    "InitialWatchingResources": [
-      {
-        "group": "apps",
-        "version": "v1",
-        "kind": "deployments"
-      },
-      {
-        "group": "core",
-        "version": "v1",
-        "kind": "pods"
-      }
-    ],
-    "InitialWebHookUrls": ["http://localhost:8080/k8sResourceUpdated"],
-    "AutoInclusterConfig": false,
-    "ApiServerUrl": "https://127.0.0.1:8443",
-    "AuthType": "ClientCert",
-    "TokenFilePath": "/var/run/secrets/kubernetes.io/serviceaccount/token",
-    "ClientCertPath": "/etc/kubernetes/pki/apiserver.crt",
-    "ClientKeyPath": "/etc/kubernetes/pki/apiserver.key",
-    "CaCertPath": "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+  "minLogLevel": "trace",
+  "logType": "json",
+  "listenAddress": "0.0.0.0:9000",
+  "initialWatchingResources": [
+    {
+      "group": "core",
+      "version": "v1",
+      "kind": "Pod",
+      "resourceType": "pods"
+    },
+    {
+      "group": ""
+    }
+  ],
+  "initialWebHookUrls": [
+    "http://localhost:8080/k8sResourceUpdated"
+  ],
+  "enableSyncApiGroups": true,
+  "apiGroupsSyncIntervalSecond": 30,
+  "k8sClientConfig": {
+    "apiServerUrl": "https://kubernetes.default",
+    "authType": "ClientCert",
+    "autoInClusterConfig": true,
+    "autoKeepAlive": false,
+    "autoReconnect": false,
+    "caCertDataPemBase64": "",
+    "caCertPath": "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+    "clientCertDataPemBase64": "",
+    "clientCertPath": "/etc/kubernetes/pki/apiserver.crt",
+    "clientKeyDataPemBase64": "",
+    "clientKeyPath": "/etc/kubernetes/pki/apiserver.key",
+    "tokenFilePath": "/var/run/secrets/kubernetes.io/serviceaccount/token"
   }
+}

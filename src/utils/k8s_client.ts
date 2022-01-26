@@ -344,7 +344,7 @@ export class K8sClient {
         }
     }
 
-    private clientCertsBase64Decode(clientCertBase64: string, clientKeyBase64: string, caCertBase64: string ): {clientCertPem:string, clientKeyPem:string, caCertPem: string} {
+    private clientCertsBase64Decode(clientCertBase64: string, clientKeyBase64: string, caCertBase64: string): { clientCertPem: string, clientKeyPem: string, caCertPem: string } {
         return {
             clientCertPem: Buffer.from(Base64.decode(clientCertBase64)).toString('utf8'),
             clientKeyPem: Buffer.from(Base64.decode(clientKeyBase64)).toString('utf8'),

@@ -1,4 +1,3 @@
-
 import jsonpath from "jsonpath"
 import yaml from "yaml";
 

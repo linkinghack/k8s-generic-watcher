@@ -3,7 +3,7 @@ import {K8sClient, K8sClientOptions} from "../utils/k8s_client";
 import {K8sApiObjectWatcher} from "../watcher/k8s_api_resource_watcher";
 import {ApiGroupDetector} from "../k8s_resources/api_group_detector";
 
-let clientOptions:K8sClientOptions = {
+let clientOptions: K8sClientOptions = {
     apiServerUrl: "",
     authType: "KubeConfig",
     autoInClusterConfig: false,
@@ -20,7 +20,7 @@ let clientOptions:K8sClientOptions = {
 const k8sClient = new K8sClient(clientOptions)
 const apiGroupDetector = new ApiGroupDetector([], k8sClient)
 
-let watcher = new K8sApiObjectWatcher({group: "core", version:"v1", kind:"Pod"}, null, k8sClient, apiGroupDetector);
+let watcher = new K8sApiObjectWatcher({group: "core", version: "v1", kind: "Pod"}, null, k8sClient, apiGroupDetector);
 watcher.Start();
 setTimeout(() => {
     let pods = watcher.List();

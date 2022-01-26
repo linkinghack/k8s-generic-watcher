@@ -133,10 +133,10 @@ export class CacheInformer extends EventEmitter {
      * @param annotations annotation selector
      * @param namespace filter namespace
      */
-    public SearchObjectsByLabelSelector(customKVMatch?: Map<string, string>, annotations?: Map<string, string>, namespace?:string): K8sApiObject[] {
+    public SearchObjectsByLabelSelector(customKVMatch?: Map<string, string>, annotations?: Map<string, string>, namespace?: string): K8sApiObject[] {
         let result: K8sApiObject[] = new Array<K8sApiObject>();
         let filterFn = (obj: K8sObjectCacheType) => {
-            if (obj.labels.Match(new KVMatcher(customKVMatch)) && obj.annotations.Match(new KVMatcher(annotations)) ) {
+            if (obj.labels.Match(new KVMatcher(customKVMatch)) && obj.annotations.Match(new KVMatcher(annotations))) {
                 result.push(obj.originalObject);
             }
         }

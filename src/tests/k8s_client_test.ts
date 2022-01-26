@@ -13,7 +13,7 @@ export function createTestK8sClient() {
         caCertPath: "",
         caCertDataPemBase64: "",
         clientCertDataPemBase64: "",
-        clientKeyDataPemBase64:"",
+        clientKeyDataPemBase64: "",
         autoKeepAlive: false,
         autoReconnect: false
     }

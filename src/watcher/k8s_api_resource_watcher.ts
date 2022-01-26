@@ -185,7 +185,7 @@ export class K8sApiObjectWatcher extends EventEmitter {
             for (let param of params) {
                 if (firstTime && url.includes("?")) {
                     url += `&${param[0]}=${param[1]}`;
-                                 }else {
+                } else {
                     url += `?${param[0]}=${param[1]}`;
                 }
                 firstTime = false;

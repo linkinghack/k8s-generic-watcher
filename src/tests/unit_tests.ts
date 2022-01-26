@@ -1,5 +1,9 @@
-import {testGetApiGroupResource} from "./api_group_detector_test";
+import "reflect-metadata"
+import {PrintConfigFileExample} from "../configs";
+
 
 // testK8sClientCreation()
 // testGetApiGroups();
-testGetApiGroupResource();
+// testGetApiGroupResource();
+
+PrintConfigFileExample();

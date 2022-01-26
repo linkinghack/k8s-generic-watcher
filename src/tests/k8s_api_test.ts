@@ -98,7 +98,7 @@ function testK8sHTTP2() {
         console.log(`HTTP2 message received: `);
 
         let str = chunk.toString();
-        for(; str.length > 0; ) {
+        for (; str.length > 0;) {
             let endPos = str.indexOf("\n", 0);
             if (endPos < 0) {
                 strBuf += str;

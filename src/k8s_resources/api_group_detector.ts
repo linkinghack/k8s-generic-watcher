@@ -74,7 +74,7 @@ export class ApiGroupDetector {
 
         // default group/versions
         if (!this._resourcesIdxGroup.has(DefaultK8sGroup.Core)) {
-            console.log("Groups before BuildCache: ",this._resourcesIdxGroup.keys())
+            console.log("Groups before BuildCache: ", this._resourcesIdxGroup.keys())
             await this.GetApiGroupResources(DefaultK8sGroup.Core, "v1", true);
         }
         if (!this._resourcesIdxGroup.has(DefaultK8sGroup.Apps)) {
@@ -86,7 +86,7 @@ export class ApiGroupDetector {
         if (!this._resourcesIdxGroup.has(DefaultK8sGroup.ApiExtensions)) {
             await this.GetApiGroupResources(DefaultK8sGroup.ApiExtensions, "v1", true);
         }
-        console.log("Groups After BuildCache: ",this._resourcesIdxGroup.keys())
+        console.log("Groups After BuildCache: ", this._resourcesIdxGroup.keys())
     }
 
     public AddGroupVersionToCache(gv: { group: string, version: string }) {

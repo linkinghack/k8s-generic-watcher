@@ -1,9 +1,9 @@
-
 class MyMap<TK, TV> extends Map<TK, TV> {
     constructor() {
         super();
     }
-    public Length():number {
+
+    public Length(): number {
         let count = 0;
         this.forEach((value, k, m) => {
             count++;
@@ -12,7 +12,7 @@ class MyMap<TK, TV> extends Map<TK, TV> {
     }
 }
 
-interface ObjType{
+interface ObjType {
     name: string;
     labels: Map<string, string>;
     list: Array<number>

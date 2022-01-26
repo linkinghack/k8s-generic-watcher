@@ -1,5 +1,4 @@
 import {Container, nonuniqueIndex, uniqueIndex} from "multi-index";
-import {uptime} from "os";
 
 
 interface IndexObject {
@@ -54,7 +53,7 @@ function testMapAndObj() {
     const benchMarkObjSet = size => {
         console.time("benchMarkObjSet");
         for (let i = 0; i < size; i++) {
-            obj[i+'hello'] = i;
+            obj[i + 'hello'] = i;
         }
         console.timeEnd("benchMarkObjSet");
     };
@@ -62,12 +61,12 @@ function testMapAndObj() {
     const benchMarkObjGet = size => {
         console.time("benchMarkObjGet");
         for (let i = 0; i < size; i++) {
-            let x = obj[i+'hello'];
+            let x = obj[i + 'hello'];
         }
         console.timeEnd("benchMarkObjGet");
     };
 
-    for (let i = 1; i < 100; i+=10) {
+    for (let i = 1; i < 100; i += 10) {
         let size = 20000 * i;
         benchMarkMapSet(size);
         benchMarkObjSet(size);
