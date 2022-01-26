@@ -13,6 +13,7 @@ import logger from "../logger";
 import yaml from "yaml";
 import {homedir} from "os";
 import * as Base64 from 'base64-arraybuffer';
+import {inject, singleton} from "tsyringe";
 
 const log = logger.getChildLogger({name: "K8sClient"});
 
@@ -25,10 +26,15 @@ export class K8sClientOptions {
      */
     autoInClusterConfig: boolean = true;
 
+    // Specify the url to communicate with ApiServer.
+    //  When autoInClusterConfig is enabled, just leave this empty or override the default "https://kubernetes.default.svc"
+    apiServerUrl: string = "";
+
     // If autoInclusterConfig is true, authType will be ignored.
-    //   Can be set to AUTH_TYPE_TOKEN or AUTH_TYPE_CERT.
+    //   Can be set to BearerToken or ClientCertificate or KubeConfig.
     authType: string = types.AuthTypeKubeConfig;
 
+    // The token file path when authType is BearerToken
     tokenFilePath: string;
 
     // Takes effect only if autoInclusterConfig is false and authType == AuthTypeClientCertificate.
@@ -40,10 +46,9 @@ export class K8sClientOptions {
     caCertPath: string;
     caCertDataPemBase64: string;
 
-
     // Whether to send application layer requests to keep tcp alive (in addition to set SO_KEEPALIVE=1 which is default enabled)
     autoKeepAlive: boolean = false;
-    // Whehter reconnect to the APIServer when the underling TCP connection is broken or closed (due to inactivity).
+    // Whether reconnect to the APIServer when the underling TCP connection is broken or closed (due to inactivity).
     autoReconnect: boolean = true;
 }
 
@@ -53,6 +58,7 @@ export class Result {
     body: string;
 }
 
+@singleton()
 export class K8sClient {
     private _apiServerUrl: string;
     private _options: K8sClientOptions;
@@ -62,11 +68,11 @@ export class K8sClient {
 
     // note: set headers in http2 request when do a request(outgoingHeaders:{})
 
-    constructor(apiserverUrl: string, options: K8sClientOptions) {
+    constructor(@inject(K8sClientOptions) options: K8sClientOptions) {
         this._options = options;
-        this._apiServerUrl = apiserverUrl;
+        this._apiServerUrl = this._options.apiServerUrl;
         this.tryToCreateClient();
-        log.info("Created K8s_client/HTTP2 client.", "ApiServer: " + apiserverUrl, "AuthType: " + this._options.authType, "AutoKeepAlive: " + this._options.autoKeepAlive);
+        log.info("Created K8s_client/HTTP2 client.", "ApiServer: " + this._apiServerUrl, "AuthType: " + this._options.authType, "AutoKeepAlive: " + this._options.autoKeepAlive);
     }
 
     private tryToCreateClient() {
@@ -189,7 +195,7 @@ export class K8sClient {
         let key = fs.readFileSync(clientKeyPath)
         let cert = fs.readFileSync(clientCertPath)
         let ca = fs.readFileSync(caCertPath)
-        this.createHttp2ClientWithClientCert(apiServerUrl, cert.toString(), key.toString(), ca.toString())
+        this.createHttp2ClientWithClientCertData(apiServerUrl, cert.toString(), key.toString(), ca.toString())
     }
 
     private createHttp2ClientWithClientCertData(apiServerUrl: string, clientCertDataPem: string, clientKeyDataPem: string, caCertDataPem: string) {
@@ -238,7 +244,7 @@ export class K8sClient {
         this.token = fs.readFileSync(tokenFilePath, 'utf8');
         let ca = fs.readFileSync(caCertPath, 'utf8');
         this.http2Client = http2.connect(apiServerUrl, {ca: ca}, (session, socket) => {
-            socket.setKeepAlive(true, 0);
+            socket.setKeepAlive(true, 0); //
             socket.on(
                 'close', (hadError) => {
                     log.info("TCP connection closed.", "hadError: " + hadError);
@@ -256,7 +262,7 @@ export class K8sClient {
 
         if (that._options.autoKeepAlive) {
             setInterval(() => {
-                this.heartBeat();
+                that.heartBeat();
             }, 5000);
         }
     }
@@ -322,13 +328,13 @@ export class K8sClient {
 
         // create Http2Client
         this._apiServerUrl = apiServerUrl;
-        if (clientKeyDataBase64.length > 0) {
+        if (clientKeyDataBase64?.length > 0) {
             this._options.clientKeyDataPemBase64 = clientKeyDataBase64;
             this._options.clientCertDataPemBase64 = clientCertDataBase64;
             this._options.caCertDataPemBase64 = caCertDataBase64;
             let pems = this.clientCertsBase64Decode(clientCertDataBase64, clientKeyDataBase64, caCertDataBase64);
             this.createHttp2ClientWithClientCertData(this._apiServerUrl, pems.clientCertPem, pems.clientKeyPem, pems.caCertPem);
-        } else if (clientKeyPath.length > 0) {
+        } else if (clientKeyPath?.length > 0) {
             this._options.caCertPath = caCertPath;
             this._options.clientCertPath = clientCertPath;
             this._options.clientKeyPath = clientKeyPath;
