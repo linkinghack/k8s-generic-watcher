@@ -5,7 +5,7 @@ import * as http2 from "http2";
 import {SecureContextOptions} from "tls";
 
 
-function analizeAPIObject(objStr: string) {
+function analyzeAPIObject(objStr: string) {
     let obj = JSON.parse(objStr);
     console.log(`API Object: type=${obj.type}, kind=${obj.object.kind}, object=${obj.object.metadata.name}`);
 }
@@ -54,7 +54,7 @@ async function testK8sAPI() {
                 str = ""; // end this loop
             } else {
                 strBuf += str.substring(0, endPos + 1);
-                analizeAPIObject(strBuf.toString());
+                analyzeAPIObject(strBuf.toString());
                 strBuf = "";
                 str = str.substring(endPos + 1);
             }
@@ -70,12 +70,12 @@ async function testK8sAPI() {
 }
 
 function testK8sHTTP2() {
-    let k8sUrl = "https://k8s.office.linkinghack.com:8443";
+    let k8sUrl = "https://172.16.67.25:8443";
 
     const tlsOptions: SecureContextOptions = {
-        key: fs.readFileSync("../configs/client.key"),
-        cert: fs.readFileSync("../configs/client.crt"),
-        ca: fs.readFileSync("../configs/ca.crt"),
+        key: fs.readFileSync("/Users/liulei/.minikube/profiles/minikube/client.key"),
+        cert: fs.readFileSync("/Users/liulei/.minikube/profiles/minikube/client.crt"),
+        ca: fs.readFileSync("/Users/liulei/.minikube/ca.crt"),
     }
 
     let client = http2.connect(k8sUrl, tlsOptions);
@@ -89,16 +89,34 @@ function testK8sHTTP2() {
 
     console.log(`HTTP2_HEADER_PATH: ${HTTP2_HEADER_PATH}`);
 
-    respStream.on('response', (headers) => {
-        console.log(`headers: ${JSON.stringify(headers)}`);
-        respStream.on('data', (chunk) => {
-            console.log(`HTTP2 message received: `);
-            analizeAPIObject(chunk.toString());
-        });
+    respStream.on('response', (headers, flags) => {
+        console.log(`headers: ${JSON.stringify(headers)}, flags=${flags}`);
 
-        respStream.on('end', () => {
-            console.log(` HTTP2 end`);
-        });
     })
+    let strBuf = new String();
+    respStream.on('data', (chunk) => {
+        console.log(`HTTP2 message received: `);
+
+        let str = chunk.toString();
+        for(; str.length > 0; ) {
+            let endPos = str.indexOf("\n", 0);
+            if (endPos < 0) {
+                strBuf += str;
+                str = ""; // end this loop
+            } else {
+                strBuf += str.substring(0, endPos + 1);
+                analyzeAPIObject(strBuf.toString());
+                strBuf = "";
+                str = str.substring(endPos + 1);
+            }
+        }
+
+    });
+
+    respStream.on('end', () => {
+        console.log(` HTTP2 end`);
+    });
 
 }
+
+testK8sHTTP2();

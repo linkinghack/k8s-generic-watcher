@@ -3,7 +3,7 @@ import {createTestK8sClient} from "./k8s_client_test";
 
 export function testGetApiGroups() {
     let client = createTestK8sClient();
-    let detector = new ApiGroupDetector(client);
+    let detector = new ApiGroupDetector(null, client);
 
     setTimeout(() => {
         detector.GetApiGroups(true).then((group) => console.log(group.kind, "groups count: " + group.groups.length))
@@ -15,7 +15,7 @@ export function testGetApiGroups() {
 
 export function testGetApiGroupResource() {
     let client = createTestK8sClient();
-    let detector = new ApiGroupDetector(client);
+    let detector = new ApiGroupDetector(null, client);
     detector.GetApiResourceDetailOfGVK("events.k8s.io", "v1", "Event")
         .then((resource) => {
             console.log("target resource API detail: ")

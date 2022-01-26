@@ -5,6 +5,7 @@ import * as types from "../types"
 export function createTestK8sClient() {
     let options: K8sClientOptions = {
         autoInClusterConfig: false,
+        apiServerUrl: "",
         authType: "KubeConfig",
         tokenFilePath: "",
         clientCertPath: "",
@@ -18,7 +19,7 @@ export function createTestK8sClient() {
     }
     options.authType = types.AuthTypeKubeConfig;
 
-    return new K8sClient("", options);
+    return new K8sClient(options);
 }
 
 export function testK8sClientCreation() {
