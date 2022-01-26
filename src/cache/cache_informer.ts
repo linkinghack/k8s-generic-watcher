@@ -3,7 +3,7 @@ import {GVK, KVMatcher} from "../k8s_resources/inner_types";
 import {Container, nonuniqueIndex, uniqueIndex} from "multi-index";
 import {K8sApiObject} from "../k8s_resources/k8s_origin_types";
 import logger from "../logger";
-import {CheckedGVK} from "../utils/k8s_name_format";
+import {CheckedGroupVersion, CheckedGVK} from "../utils/k8s_name_format";
 import jsonpath from "jsonpath"
 
 export enum InformerEvent {
@@ -219,17 +219,26 @@ export class CacheInformer extends EventEmitter {
 
     /**
      * Add 'objs' in local cache and emit ADDED event
-     * @param objs
+     * @param isListItems Whether objs is 'items' of a List request of the GVK.
+     *  In this case objects in this item list does not have 'apiVersion' and 'kind' property.
+     *   Will auto set it to current cached gvk.
+     * @param objs Objects to add
      * @constructor
      */
-    public AddObjects(...objs: K8sApiObject[]) {
+    public AddObjects(isListItems: boolean, ...objs: K8sApiObject[]) {
         let that = this;
         objs.forEach((obj) => {
-            if (!this.legalGvk(obj)) {
+            if (isListItems) {
+                obj.kind = that._gvk.kind;
+                obj.apiVersion = CheckedGroupVersion(that._gvk.group, that._gvk.version)
+            }
+            if (!this.legalGvk(obj)) { // TODO: Is is necessary?
+                log.debug("Object: ", JSON.stringify(obj))
                 log.error("Illegal object for this cache, skip.", `currentCachedGVK=${this._checkedGvk}`,
                     `ApiVersion=${obj?.apiVersion}, Kind=${obj?.kind}, Name=${obj?.metadata?.name}, uid=${obj?.metadata?.uid}`);
                 return
             }
+            log.debug("Add new object to cache.", `ApiVersion=${obj?.apiVersion}, Kind=${obj?.kind}, Name=${obj?.metadata?.name}, uid=${obj?.metadata?.uid}`)
             that._store.add(new K8sObjectCacheType(obj));
             this.emit(InformerEvent.ADDED, obj);
         })
@@ -238,6 +247,7 @@ export class CacheInformer extends EventEmitter {
     public ModifyObject(obj: K8sApiObject) {
         if (this._idxUid.has(obj?.metadata?.uid)) {
             let oldObj = this._idxUid.get(obj.metadata.uid)
+            log.debug("Update object in cache.", `ApiVersion=${obj?.apiVersion}, Kind=${obj?.kind}, Name=${obj?.metadata?.name}, uid=${obj?.metadata?.uid}`)
             this._store.delete(oldObj);
             this._store.add(new K8sObjectCacheType(obj));
             this.emit(InformerEvent.MODIFIED, oldObj, obj);
@@ -249,6 +259,7 @@ export class CacheInformer extends EventEmitter {
 
     public DeleteObject(obj: K8sApiObject) {
         if (this._idxUid.has(obj?.metadata?.uid)) {
+            log.debug("Delete object in cache.", `ApiVersion=${obj?.apiVersion}, Kind=${obj?.kind}, Name=${obj?.metadata?.name}, uid=${obj?.metadata?.uid}`);
             this._store.delete(this._idxUid.get(obj?.metadata?.uid));
             this.emit(InformerEvent.DELETED);
         } else {
