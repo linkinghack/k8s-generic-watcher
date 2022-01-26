@@ -59,12 +59,9 @@ export function IsApiGroupList(obj: Object): boolean {
     return (obj && obj.hasOwnProperty("kind") && obj.hasOwnProperty("apiVersion") && obj.hasOwnProperty("groups"))
 }
 
-export interface TypeMeta {
+export interface K8sApiObject {
     kind: string,
     apiVersion: string, // group/version
-}
-
-export interface K8sApiObject extends TypeMeta {
     metadata: ObjectMeta,
     status: Object
 }
@@ -99,8 +96,11 @@ export interface ObjectMeta {
     uid: string
 }
 
-export interface K8sApiObjectList extends TypeMeta{
+export interface K8sApiObjectList {
+    kind: string,
+    apiVersion: string, // group/version
     metadata: ListMeta,
+    items: K8sApiObject[]
 }
 
 export interface ListMeta {
@@ -108,4 +108,23 @@ export interface ListMeta {
     remainingItemCount: bigint,
     resourceVersion: string,
     selfLink: string,
+}
+
+export interface WatchEvent {
+    type: string,
+    object: K8sApiObject
+}
+
+export const K8sApiQueryParameterNames = {
+    resourceVersion: "resourceVersion",
+    resourceVersionMatch: "resourceVersionMatch",
+    watch: "watch",
+    timeoutSeconds: "timeoutSeconds",
+    fieldSelector: "fieldSelector",
+    labelSelector: "labelSelector"
+}
+
+export const K8sApiQueryParamValues = {
+    WatchEnabled: "true",
+    WatchDisabled: "false"
 }
