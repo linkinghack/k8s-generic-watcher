@@ -2,7 +2,6 @@
  * Group Version Kind in Kubernetes
  */
 import {APIResource} from "./k8s_origin_types";
-import {ApiGroupVersionToUrl} from "../utils/k8s_name_format";
 
 export interface GVK {
     group: string;
@@ -14,6 +13,7 @@ export class KVMatcher {
     labels: Map<string, string>
 
     constructor(labels: Object) {
+        labels = new Map<string, string>();
         Object.keys(labels).forEach((objKey, idx, objKeys) => {
             this.labels.set(objKey, labels[objKey]);
         })
@@ -64,15 +64,4 @@ export interface ApiResourceCacheType {
  */
 export function GetGVR(apiResource: ApiResourceCacheType): string {
     return `${apiResource.group}/${apiResource.version}/${apiResource.resource}`;
-}
-
-/**
- * Get available url of a specific Api resource to request APIServer.
- * @param apiResource cached api resource that containing (group, version, king, resource) information
- */
-export function GVRUrl(apiResource: ApiResourceCacheType, namespace?: string): string {
-    if (namespace) {
-        return `${ApiGroupVersionToUrl(apiResource.group, apiResource.version)}/namespace/%{namespace}/${apiResource.resource}`;
-    }
-    return `${ApiGroupVersionToUrl(apiResource.group, apiResource.version)}/${apiResource.resource}`
 }

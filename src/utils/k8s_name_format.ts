@@ -1,3 +1,5 @@
+import {ApiResourceCacheType} from "../k8s_resources/inner_types";
+
 export enum DefaultK8sGroup {
     Core = "core",
     Apps = "apps",
@@ -29,6 +31,25 @@ export function ApiGroupVersionToUrl(group: string, version: string): string {
 
     // till now(2022/01/11), api groups except core/v1 are all located at /apis
     return `${DefaultUrlPath.ApiGroups}/${group}/${version}`;
+}
+
+/**
+ * Get available url of a specific Api resource to request APIServer.
+ * @param apiResource cached api resource that containing (group, version, king, resource) information
+ * @param namespace
+ */
+export function GVRUrl(apiResource: ApiResourceCacheType, namespace?: string, name?: string): string {
+    let resourceUrl = ""
+    if (namespace && apiResource.originalApiResource.namespaced) {
+        resourceUrl = `${ApiGroupVersionToUrl(apiResource.group, apiResource.version)}/namespace/%{namespace}/${apiResource.resource}`;
+    } else {
+        resourceUrl = `${ApiGroupVersionToUrl(apiResource.group, apiResource.version)}/${apiResource.resource}`;
+    }
+    if (name) {
+        resourceUrl += name;
+    }
+
+    return resourceUrl;
 }
 
 /**
