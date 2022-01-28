@@ -67,6 +67,6 @@ export function CheckedGroupVersion(group: string, version: string) {
     }
 }
 
-export function CheckedGVK(group: string, version: string, kind: string) {
+export function CheckedGVK(group: string, version: string, kind: string):string {
     return `${CheckedGroupVersion(group, version)}/${kind}`;
 }

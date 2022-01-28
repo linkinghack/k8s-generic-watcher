@@ -1,5 +1,7 @@
 import * as fs from "fs";
-import {GVK} from "./k8s_resources/inner_types";
+import {GVK, InitialWatchResource} from "./k8s_resources/inner_types";
+import {homedir} from "os";
+import * as types from "./types";
 import {K8sClientOptions} from "./utils/k8s_client";
 
 export class GlobalConfig {
@@ -8,11 +10,10 @@ export class GlobalConfig {
     listenAddress: string = "0.0.0.0:9000"; // Watcher API server listen address
 
     // Watcher configs
-    initialWatchingResources: Array<GVK> = [{
+    initialWatchingResources: Array<InitialWatchResource> = [{
         group: "core",
         version: "v1",
         kind: "Pod",
-        resourceType: "pods"
     } as GVK, {group: "apps", version: "v1", kind: "Deployment"} as GVK];
     initialWebHookUrls: Array<string> = ["http://localhost:8080/k8sResourceUpdated"];
 
@@ -23,6 +24,7 @@ export class GlobalConfig {
     k8sClientConfig: K8sClientOptions = {
         apiServerUrl: "https://kubernetes.default",
         authType: "ClientCert",
+        kubeConfigFilePath: "",
         autoInClusterConfig: true,
         autoKeepAlive: false,
         autoReconnect: false,
@@ -42,6 +44,9 @@ let configLoaded = false;
 export function LoadConfig() {
     // TODO load config from file
     let configFilePath: string = process.env.CONFIG_FILE_PATH || "./config.json";
+    if (configFilePath?.at(0) == '~') {
+        configFilePath = homedir() + configFilePath.slice(1);
+    }
     let configFileContent: string = fs.readFileSync(configFilePath, "utf8");
     globalConfig = JSON.parse(configFileContent) as GlobalConfig;
     configLoaded = true;

@@ -34,6 +34,7 @@ export class K8sClientOptions {
     //   Can be set to BearerToken or ClientCertificate or KubeConfig.
     authType: string = types.AuthTypeKubeConfig;
 
+    kubeConfigFilePath: string;
     // The token file path when authType is BearerToken
     tokenFilePath: string;
 
@@ -72,6 +73,9 @@ export class K8sClient {
         this._options = options;
         this._apiServerUrl = this._options.apiServerUrl;
         this.tryToCreateClient();
+        this.http2Client.on('error', (err) => {
+            log.error('Http2 client create error', err)
+        })
         log.info("Created K8s_client/HTTP2 client.", "ApiServer: " + this._apiServerUrl, "AuthType: " + this._options.authType, "AutoKeepAlive: " + this._options.autoKeepAlive);
     }
 
@@ -272,7 +276,10 @@ export class K8sClient {
      * @private
      */
     private createHttp2ClientWithKubeConfig() {
-        let kubeConfigFile = process.env.KUBECONFIG || homedir() + "/.kube/config";
+        let kubeConfigFile = process.env.KUBECONFIG || this._options.kubeConfigFilePath || homedir() + "/.kube/config";
+        if (kubeConfigFile.at(0) == '~') {
+            kubeConfigFile = homedir() + kubeConfigFile.slice(1);
+        }
         let configFileContent = fs.readFileSync(kubeConfigFile).toLocaleString();
         let config = yaml.parse(configFileContent);
 

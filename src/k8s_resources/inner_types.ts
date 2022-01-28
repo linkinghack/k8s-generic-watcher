@@ -2,11 +2,16 @@
  * Group Version Kind in Kubernetes
  */
 import {APIResource} from "./k8s_origin_types";
+import {WatcherOptions} from "../watcher/k8s_api_resource_watcher";
 
 export interface GVK {
     group: string;
     version: string;
     kind: string;
+}
+
+export interface InitialWatchResource extends GVK{
+    watchOptions?: WatcherOptions
 }
 
 export class KVMatcher {
@@ -55,13 +60,4 @@ export interface ApiResourceCacheType {
     resource: string,
     gvk: string, // "<group>/<version>/<kind>"
     originalApiResource: APIResource
-}
-
-/**
- * Get GVR of a K8s api resource for API server url.
- *   Formatted as <group>/<version>/<resource>, like ""
- * @param apiResource
- */
-export function GetGVR(apiResource: ApiResourceCacheType): string {
-    return `${apiResource.group}/${apiResource.version}/${apiResource.resource}`;
 }

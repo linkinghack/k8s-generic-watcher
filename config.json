@@ -1,16 +1,12 @@
 {
   "minLogLevel": "trace",
-  "logType": "json",
+  "logType": "pretty",
   "listenAddress": "0.0.0.0:9000",
   "initialWatchingResources": [
     {
       "group": "core",
       "version": "v1",
-      "kind": "Pod",
-      "resourceType": "pods"
-    },
-    {
-      "group": ""
+      "kind": "Pod"
     }
   ],
   "initialWebHookUrls": [
@@ -20,8 +16,9 @@
   "apiGroupsSyncIntervalSecond": 30,
   "k8sClientConfig": {
     "apiServerUrl": "https://kubernetes.default",
-    "authType": "ClientCert",
-    "autoInClusterConfig": true,
+    "authType": "KubeConfig",
+    "kubeConfigFilePath": "~/.kube/ws.config",
+    "autoInClusterConfig": false,
     "autoKeepAlive": false,
     "autoReconnect": false,
     "caCertDataPemBase64": "",

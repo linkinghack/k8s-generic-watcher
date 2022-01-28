@@ -22,14 +22,14 @@ export interface WatcherOptions {
     // The namespace to watch.
     // For non-namespaced resource, this is ignored.
     // For namespaced resources, specify the focused namespace. If empty, watch this GVK in all namespaces
-    namespace: string;
+    namespace?: string;
     // Filter by resource name. In this case, only one specific API resource will be watched.
-    name: string;
+    name?: string;
     // fieldSelector and labelSelector will be added to the request to apiServer, so that cached objects just obey these filters.
-    fieldSelector: Map<string, string>;
-    labelSelector: Map<string, string>;
+    fieldSelector?: Map<string, string>;
+    labelSelector?: Map<string, string>;
     // Usually empty. Specify additional query parameters to the request to apiServer.
-    additionalK8sApiUrlParams: Object;
+    additionalK8sApiQueryParams?: Object;
 }
 
 const WatchRequestParams = new Map<string, string>([
@@ -68,9 +68,9 @@ export class K8sApiObjectWatcher extends EventEmitter {
         this._gvk = gvk;
         this._options = options;
         this._httpParams = new Map<string, string>();
-        if (this._options?.additionalK8sApiUrlParams) {
-            for (let key of Object.keys(this._options?.additionalK8sApiUrlParams)) {
-                this._httpParams.set(key, this._options?.additionalK8sApiUrlParams[key]);
+        if (this._options?.additionalK8sApiQueryParams) {
+            for (let key of Object.keys(this._options?.additionalK8sApiQueryParams)) {
+                this._httpParams.set(key, this._options?.additionalK8sApiQueryParams[key]);
             }
         }
 
@@ -91,7 +91,7 @@ export class K8sApiObjectWatcher extends EventEmitter {
         // construct the url and request based on parameters (namespace, fieldSelector, labelSelector)
         this._resourceUrl = K8sApiObjectWatcher.applyHttpUrlParameters(GVRUrl(this._resourceDetail, this._options?.namespace), this._httpParams)
 
-        // 2. list and get version
+        // 2. list and get resourceVersion
         let listResult = await this._k8sClient.requestOnce(this._resourceUrl,)
         if (listResult.status != HttpStatus.OK) {
             log.error(`List target Objects failed`, `currentGVK=${this._gvk}`, `h2Status=${listResult.status}`, `h2Headers=${listResult.headers}`);
@@ -107,8 +107,7 @@ export class K8sApiObjectWatcher extends EventEmitter {
         this._h2Session = this._k8sClient.request(K8sApiObjectWatcher.applyHttpUrlParameters(this._resourceUrl,
             WatchRequestParams,
             new Map<string, string>([[K8sApiQueryParameterNames.resourceVersion, this._startVersion]])))
-
-        this.readEvents();
+        this.readEvents();  // continuously read watch events
 
         this._started = true;
     }
