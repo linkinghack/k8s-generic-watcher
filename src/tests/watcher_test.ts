@@ -6,6 +6,7 @@ import {ApiGroupDetector} from "../k8s_resources/api_group_detector";
 let clientOptions: K8sClientOptions = {
     apiServerUrl: "",
     authType: "KubeConfig",
+    kubeConfigFilePath: "",
     autoInClusterConfig: false,
     autoKeepAlive: false,
     autoReconnect: false,

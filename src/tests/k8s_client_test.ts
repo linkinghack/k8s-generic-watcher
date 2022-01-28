@@ -7,6 +7,7 @@ export function createTestK8sClient() {
         autoInClusterConfig: false,
         apiServerUrl: "",
         authType: "KubeConfig",
+        kubeConfigFilePath: "",
         tokenFilePath: "",
         clientCertPath: "",
         clientKeyPath: "",
@@ -42,3 +43,17 @@ export function testK8sClientCreation() {
         client.close();
     })
 }
+
+export function testK8sResources() {
+    let client = createTestK8sClient();
+    let stream = client.request('/apis')
+    let respBuf = String();
+    stream.on('data', (chunk) => {
+        respBuf += chunk
+    })
+    stream.on('end', () => {
+        console.log(respBuf)
+        stream.close();
+    })
+}
+

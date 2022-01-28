@@ -1,8 +1,36 @@
-// 1. 加载配置文件
+import 'reflect-metadata';
+
+import {GetConfig, LoadConfig} from "./configs";
+import {K8sClientOptions} from "./utils/k8s_client";
+import {container} from "tsyringe";
 
 
-// 2. 读取Auth配置，尝试创建K8s API 连接，创建K8sClient
+console.log("hello")
+
+// 1. Load config file
+LoadConfig();
+
+// 2. inject default configs to tsyringe container.
+container.registerInstance("preIndexingGVs", GetConfig().initialWatchingResources)
+container.registerInstance(K8sClientOptions, GetConfig().k8sClientConfig);
 
 
-// 3. 创建配置指定
+import RootRouter from "./apis/routes";
+import {WebServer} from "./apis/server";
+import {WatchersMap} from "./watcher/watchers_map";
 
+
+
+console.log("hello")
+console.log(container.resolve("preIndexingGVs"))
+
+// 3. Create watchers for initial watching resources
+let watchersMap = container.resolve(WatchersMap);
+GetConfig().initialWatchingResources.forEach((gvk) => {
+    watchersMap.AddWatcher(gvk)
+})
+
+// 4. start web server
+let server = new WebServer( {listenPort: 3000})
+server.RegisterRouter('/', RootRouter)
+server.Serve()

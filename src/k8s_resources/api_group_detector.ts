@@ -86,7 +86,7 @@ export class ApiGroupDetector {
         if (!this._resourcesIdxGroup.has(DefaultK8sGroup.ApiExtensions)) {
             await this.GetApiGroupResources(DefaultK8sGroup.ApiExtensions, "v1", true);
         }
-        console.log("Groups After BuildCache: ", this._resourcesIdxGroup.keys())
+        log.info("Groups After BuildCache: ", this._resourcesIdxGroup.keys())
     }
 
     public AddGroupVersionToCache(gv: { group: string, version: string }) {
@@ -244,5 +244,14 @@ export class ApiGroupDetector {
             await this.GetApiGroups(true);
         }
         return this._groupVersionsSet.has(`${CheckedGroupVersion(group, version)}`);
+    }
+
+    public SearchByKind(kind: string):ApiResourceCacheType[] {
+        let gvks = this._resourcesIdxKind.get(kind)
+        let result = new Array<ApiResourceCacheType>();
+        for (let r of gvks) {
+            result.push(r)
+        }
+        return result;
     }
 }
