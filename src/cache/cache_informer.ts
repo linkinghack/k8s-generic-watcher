@@ -82,13 +82,13 @@ export class CacheInformer extends EventEmitter {
         let namespaceFilteredResults: ReadonlySet<K8sObjectCacheType>;
         if (namespace) {
             namespaceFilteredResults = this._idxNamespace.get(namespace)
-            log.debug(`${namespaceFilteredResults.size} results founded filter by namespace: ${namespace}`, `currentCachedGVK=${this._checkedGvk}`)
+            log.debug(`${namespaceFilteredResults?.size} results founded filter by namespace: ${namespace}`, `currentCachedGVK=${this._checkedGvk}`)
         }
 
         let nameFilteredResults: ReadonlySet<K8sObjectCacheType>;
         if (name) {
             nameFilteredResults = this._idxName.get(name);
-            log.debug(`${namespaceFilteredResults.size} results founded filter by name: ${name}`, `currentCachedGVK=${this._checkedGvk}`)
+            log.debug(`${namespaceFilteredResults?.size} results founded filter by name: ${name}`, `currentCachedGVK=${this._checkedGvk}`)
         }
 
         // <namespace, name> is unique for a specific GVK
@@ -158,19 +158,19 @@ export class CacheInformer extends EventEmitter {
     }
 
     private SetsIntersection(...sets: ReadonlySet<K8sObjectCacheType>[]): Array<K8sObjectCacheType> {
-        log.debug("sets count=" + sets.length, `currentCachedGVK=${this._checkedGvk}`)
+        log.debug("sets count=" + sets?.length, `currentCachedGVK=${this._checkedGvk}`)
         let finalResult = new Array<K8sObjectCacheType>();
-        if (sets.length < 1) {
+        if (!sets || sets?.length < 1) {
             return finalResult;
         }
-        if (sets.length == 1) {
-            sets[0].forEach((obj) => {
+        if (sets?.length == 1) {
+            sets[0]?.forEach((obj) => {
                 finalResult.push(obj);
-                return finalResult;
             })
+            return finalResult;
         }
 
-        // descend sort
+        // descending sort, and pop the shortest set
         let sortedSets = sets.sort((left, right) => {
             return right.size - left.size
         });

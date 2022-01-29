@@ -1,9 +1,7 @@
 import 'reflect-metadata';
-
 import {GetConfig, LoadConfig} from "./configs";
 import {K8sClientOptions} from "./utils/k8s_client";
 import {container} from "tsyringe";
-
 
 console.log("hello")
 
@@ -14,15 +12,9 @@ LoadConfig();
 container.registerInstance("preIndexingGVs", GetConfig().initialWatchingResources)
 container.registerInstance(K8sClientOptions, GetConfig().k8sClientConfig);
 
-
 import RootRouter from "./apis/routes";
 import {WebServer} from "./apis/server";
 import {WatchersMap} from "./watcher/watchers_map";
-
-
-
-console.log("hello")
-console.log(container.resolve("preIndexingGVs"))
 
 // 3. Create watchers for initial watching resources
 let watchersMap = container.resolve(WatchersMap);
