@@ -13,12 +13,14 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v2
+      - name: set-image-tag
+        run: echo "::set-output name=image_tag::$(git rev-parse --short HEAD)"
       - name: build-image
-        run: docker build -t linkinghack/k8s-generic-watcher:${{ GITHUB_SHA:7 }}
+        run: docker build -t linkinghack/k8s-generic-watcher:${{ steps.vars.outputs.image_tag }}
       - name: push-image
         env:
           DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
           DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
         run: |
           docker login -u $DOCKERHUB_USER -p $DOCKERHUB_PASSWORD
-          docker push linkinghack/k8s-generic-watcher:${{ GITHUB_SHA:7 }}
+          docker push linkinghack/k8s-generic-watcher:${{ steps.vars.outputs.image_tag }}
