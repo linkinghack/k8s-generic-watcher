@@ -1,0 +1,26 @@
+name: K8s Generic Resources Watcher CI Actions
+on:
+  push:
+    branches:
+      - main
+      - master
+      - dev
+      - stage
+      - rc
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: tag-name
+        run: export IMAGE_TAG=${{ github.ref_name }}-$(git rev-parse --short HEAD)
+      - name: build-image
+        run: docker build -t linkinghack/k8s-generic-watcher:$IMAGE_TAG
+      - name: push-image
+        env:
+          DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
+          DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+        run: |
+          docker login -u $DOCKERHUB_USER -p $DOCKERHUB_PASSWORD
+          docker push linkinghack/k8s-generic-watcher:$IMAGE_TAG

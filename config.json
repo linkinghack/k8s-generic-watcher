@@ -17,7 +17,7 @@
   "k8sClientConfig": {
     "apiServerUrl": "https://kubernetes.default",
     "authType": "KubeConfig",
-    "kubeConfigFilePath": "~/.kube/ws.config",
+    "kubeConfigFilePath": "~/.kube/config",
     "autoInClusterConfig": false,
     "autoKeepAlive": false,
     "autoReconnect": false,
