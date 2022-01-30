@@ -86,7 +86,15 @@ export class ApiGroupDetector {
         if (!this._resourcesIdxGroup.has(DefaultK8sGroup.ApiExtensions)) {
             await this.GetApiGroupResources(DefaultK8sGroup.ApiExtensions, "v1", true);
         }
-        log.info("Groups After BuildCache: ", this._resourcesIdxGroup.keys())
+        log.info("Groups After BuildCache(): ", this.CachedApiGroups())
+    }
+
+    public CachedApiGroups(): string[] {
+        let result = Array<string>();
+        for (let ag of this._resourcesIdxGroup.keys()) {
+            result.push(ag)
+        }
+        return result;
     }
 
     public AddGroupVersionToCache(gv: { group: string, version: string }) {

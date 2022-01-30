@@ -42,13 +42,17 @@ let globalConfig: GlobalConfig;
 let configLoaded = false;
 
 export function LoadConfig() {
-    // TODO load config from file
     let configFilePath: string = process.env.CONFIG_FILE_PATH || "./config.json";
     if (configFilePath?.at(0) == '~') {
         configFilePath = homedir() + configFilePath.slice(1);
     }
     let configFileContent: string = fs.readFileSync(configFilePath, "utf8");
     globalConfig = JSON.parse(configFileContent) as GlobalConfig;
+    // In-cluster config environment variable
+    let inCluster = process.env.AUTO_INCLUSTER_CONFIG
+    if (inCluster == 'true') {
+        globalConfig.k8sClientConfig.autoInClusterConfig = true;
+    }
     configLoaded = true;
 }
 
