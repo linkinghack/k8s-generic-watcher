@@ -89,6 +89,7 @@ export class K8sClient {
             } else {
                 switch (this._options.authType as string) {
                     case types.AuthTypeBearerToken:
+                        log.info(`Creating K8sClinet with type BearerToken`)
                         this.createHttp2ClientWithToken(this._apiServerUrl, this._options.tokenFilePath, this._options.caCertPath);
                         break;
                     case types.AuthTypeClientCertificate:
@@ -123,6 +124,7 @@ export class K8sClient {
     }
 
     public request(path: string, outgoingHeaders?: http2.OutgoingHttpHeaders): http2.ClientHttp2Stream {
+        let that = this;
         if (this._closed) {
             throw new Error("K8s_client is closed.");
         }
@@ -133,8 +135,8 @@ export class K8sClient {
         if (!outgoingHeaders[http2.constants.HTTP2_HEADER_METHOD]) {
             outgoingHeaders[http2.constants.HTTP2_HEADER_METHOD] = http2.constants.HTTP2_METHOD_GET
         }
-        if (this._options.authType == types.AuthTypeBearerToken) {
-            outgoingHeaders[http2.constants.HTTP2_HEADER_AUTHORIZATION] = this.token;
+        if (this._options.authType == types.AuthTypeBearerToken || this._options.autoInClusterConfig) {
+            outgoingHeaders[http2.constants.HTTP2_HEADER_AUTHORIZATION] = `Bearer ${that.token}`;
         }
         outgoingHeaders[http2.constants.HTTP2_HEADER_PATH] = path;
         return this.http2Client.request(outgoingHeaders);
@@ -172,7 +174,7 @@ export class K8sClient {
     }
 
     public heartBeat() {
-        log.debug("Sending heartbeat.");
+        log.silly("Sending heartbeat.");
         let header: http2.OutgoingHttpHeaders = {
             [http2.constants.HTTP2_HEADER_PATH]: '/api',
             [http2.constants.HTTP2_HEADER_METHOD]: 'GET'
@@ -231,8 +233,8 @@ export class K8sClient {
 
         if (that._options.autoKeepAlive) {
             setInterval(() => {
-                this.heartBeat();
-            }, 5000);
+                that.heartBeat();
+            }, 10000);
         }
     }
 
@@ -267,7 +269,7 @@ export class K8sClient {
         if (that._options.autoKeepAlive) {
             setInterval(() => {
                 that.heartBeat();
-            }, 5000);
+            }, 10000);
         }
     }
 

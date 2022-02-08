@@ -23,6 +23,6 @@ GetConfig().initialWatchingResources.forEach((gvk) => {
 })
 
 // 4. start web server
-let server = new WebServer( {listenPort: 3000})
+let server = new WebServer( {listenPort: GetConfig().listenPort || 3000 })
 server.RegisterRouter('/', RootRouter)
 server.Serve()

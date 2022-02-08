@@ -1,7 +1,7 @@
 {
   "minLogLevel": "trace",
   "logType": "pretty",
-  "listenAddress": "0.0.0.0:9000",
+  "listenPort": 3000,
   "initialWatchingResources": [
     {
       "group": "core",
@@ -18,8 +18,8 @@
     "apiServerUrl": "https://kubernetes.default",
     "authType": "KubeConfig",
     "kubeConfigFilePath": "~/.kube/config",
-    "autoInClusterConfig": false,
-    "autoKeepAlive": false,
+    "autoInClusterConfig": true,
+    "autoKeepAlive": true,
     "autoReconnect": false,
     "caCertDataPemBase64": "",
     "caCertPath": "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",

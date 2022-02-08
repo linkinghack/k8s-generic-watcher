@@ -1,0 +1,139 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: generic-watcher
+automountServiceAccountToken: true
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  annotations:
+    rbac.authorization.kubernetes.io/autoupdate: "true"
+  name: watch-all
+rules:
+- apiGroups:
+  - '*'
+  resources:
+  - '*'
+  verbs:
+  - 'get'
+  - 'list'
+  - 'watch'
+- nonResourceURLs:
+  - '*'
+  verbs:
+  - 'get'
+  - 'list'
+  - 'watch'
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+# This cluster role binding allows anyone in the "manager" group to read secrets in any namespace.
+kind: ClusterRoleBinding
+metadata:
+  name: watcher-watch-all
+subjects:
+- kind: ServiceAccount
+  name: generic-watcher # Name is case sensitive
+  namespace: default
+roleRef:
+  kind: ClusterRole
+  name: watch-all
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: generic-watcher-config
+data:
+  config.json: |
+    {
+      "minLogLevel": "trace",
+      "logType": "pretty",
+      "listenPort": 3000,
+      "initialWatchingResources": [
+        {
+          "group": "core",
+          "version": "v1",
+          "kind": "Pod"
+        }
+      ],
+      "initialWebHookUrls": [
+        "http://localhost:8080/k8sResourceUpdated"
+      ],
+      "enableSyncApiGroups": true,
+      "apiGroupsSyncIntervalSecond": 30,
+      "k8sClientConfig": {
+        "apiServerUrl": "https://kubernetes.default",
+        "authType": "KubeConfig",
+        "kubeConfigFilePath": "~/.kube/config",
+        "autoInClusterConfig": true,
+        "autoKeepAlive": true,
+        "autoReconnect": false,
+        "caCertDataPemBase64": "",
+        "caCertPath": "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+        "clientCertDataPemBase64": "",
+        "clientCertPath": "/etc/kubernetes/pki/apiserver.crt",
+        "clientKeyDataPemBase64": "",
+        "clientKeyPath": "/etc/kubernetes/pki/apiserver.key",
+        "tokenFilePath": "/var/run/secrets/kubernetes.io/serviceaccount/token"
+      }
+    }
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: generic-watcher-deployment
+  labels:
+    app: generic-watcher
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: generic-watcher
+  template:
+    metadata:
+      labels:
+        app: generic-watcher
+    spec:
+      serviceAccountName: generic-watcher
+      volumes: 
+      - name: config
+        configMap: 
+          name: generic-watcher-config
+      containers:
+      - name: generic-watcher
+        image: k8s-generic-watch:latest
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: config
+          mountPath: /etc/watcher
+        env:
+        - name: CONFIG_FILE_PATH
+          value: /etc/watcher/config.json
+        ports:
+        - containerPort: 3000
+        resources:
+          limits:
+            cpu: 2000m
+            memory: 500Mi
+          requests:
+            cpu: 20m
+            memory: 10Mi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: generic-watcher
+spec:
+  selector:
+    app: generic-watcher
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000

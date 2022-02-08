@@ -7,7 +7,7 @@ import {K8sClientOptions} from "./utils/k8s_client";
 export class GlobalConfig {
     minLogLevel: string = "trace"; // silly, trace, debug, info, warn, error, fatal
     logType: string = "json"; // json, pretty, hidden
-    listenAddress: string = "0.0.0.0:9000"; // Watcher API server listen address
+    listenPort: number = 3000; // Watcher API server listen address
 
     // Watcher configs
     initialWatchingResources: Array<InitialWatchResource> = [{
