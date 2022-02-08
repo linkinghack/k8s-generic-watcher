@@ -205,7 +205,7 @@ export class K8sApiObjectWatcher extends EventEmitter {
         return this._cacheInformer.SearchObjects(uid, name, namespace, fieldMatches);
     }
 
-    public QueryByLabelAnnotation(customKVMatch?: Map<string, string>, annotations?: Map<string, string>, namespace?: string): K8sApiObject[] {
-        return this._cacheInformer.SearchObjectsByLabelSelector(customKVMatch, annotations, namespace);
+    public QueryByLabelAnnotation(labelSelectors?: Map<string, string>, annotations?: Map<string, string>, namespace?: string): K8sApiObject[] {
+        return this._cacheInformer.SearchObjectsByLabelSelector(labelSelectors, annotations, namespace);
     }
 }

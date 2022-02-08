@@ -27,7 +27,7 @@ RootRouter.get('/', (req, resp) => {
  * Query router routes requests for querying K8s api objects
  */
 QueryRouter.get('/', handler.QueryResource.bind(handler))
-
+QueryRouter.post('/', handler.QueryResource.bind(handler))
 
 /**
  * Manager router routes requests for managing watchers
