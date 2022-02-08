@@ -256,6 +256,9 @@ export class ApiGroupDetector {
 
     public SearchByKind(kind: string):ApiResourceCacheType[] {
         let gvks = this._resourcesIdxKind.get(kind)
+        if (!gvks) {
+            return null;
+        }
         let result = new Array<ApiResourceCacheType>();
         for (let r of gvks) {
             result.push(r)

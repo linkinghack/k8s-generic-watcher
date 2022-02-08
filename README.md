@@ -1,6 +1,9 @@
 # Generic K8s Resources Watcher
 ｜[中文](./README.md) | [English](./README.en.md) |
 
+![example workflow](https://github.com/<OWNER>/<REPOSITORY>/actions/workflows/<WORKFLOW_FILE>/badge.svg)
+
+
 K8s API 对象 watch 监控服务，支持K8s原生资源和任意指定的GVK，支持任意自定义资源（CR）的监控。
 
 > 为方便描述, 以下简称此工具为GRW

@@ -106,16 +106,16 @@ export class CacheInformer extends EventEmitter {
                     log.debug("FieldIndex not found, add it.", "fieldExp=" + fieldExp, `currentCachedGVK=${this._checkedGvk}`)
                 }
 
-                let tmpMatchResult = that._fieldIndices.get(fieldExp).get(value);
-                if (tmpMatchResult.size > 0) {
+                // Values of the field in its index are stored as JSON string.
+                //  Serialize the target value to JSON before matching.
+                let tmpMatchResult = that._fieldIndices.get(fieldExp).get(JSON.stringify(value));
+                if (tmpMatchResult?.size > 0) {
                     fieldMatchResults.push(tmpMatchResult)
-                    log.debug()
                 } else {
                     log.debug("Search by field:" + fieldExp + " have no result", `currentCachedGVK=${this._checkedGvk}`)
                 }
             })
         }
-
 
         if (namespace) {
             return this.CacheTypeObjs2OriginalTypeObjs(this.SetsIntersection(namespaceFilteredResults, ...fieldMatchResults))
@@ -129,14 +129,14 @@ export class CacheInformer extends EventEmitter {
 
     /**
      * Search objects by labels or annotations matching. O(n)
-     * @param customKVMatch label selector
+     * @param labelSelectors label selector
      * @param annotations annotation selector
      * @param namespace filter namespace
      */
-    public SearchObjectsByLabelSelector(customKVMatch?: Map<string, string>, annotations?: Map<string, string>, namespace?: string): K8sApiObject[] {
+    public SearchObjectsByLabelSelector(labelSelectors?: Map<string, string>, annotations?: Map<string, string>, namespace?: string): K8sApiObject[] {
         let result: K8sApiObject[] = new Array<K8sApiObject>();
         let filterFn = (obj: K8sObjectCacheType) => {
-            if (obj.labels.Match(new KVMatcher(customKVMatch)) && obj.annotations.Match(new KVMatcher(annotations))) {
+            if (obj.labels.Match(new KVMatcher(labelSelectors)) && obj.annotations.Match(new KVMatcher(annotations))) {
                 result.push(obj.originalObject);
             }
         }
@@ -188,18 +188,27 @@ export class CacheInformer extends EventEmitter {
     }
 
     /**
-     * Add an index for specified object field to accelerate search
+     * Add an index for specified object field to accelerate search.
+     *   The value of specified field will be encoded as JSON string before stored in the index.
+     *   TODO: JSON parse before query with field index. ✅
      * @param fieldExpression the field expression, like `.spec.template.name`
      */
     public AddFieldIndex(fieldExpression: string) {
         let that = this;
         let idx = nonuniqueIndex<K8sObjectCacheType, string>((obj) => {
-            return jsonpath.query(obj, "$" + fieldExpression)
-        }, 's').on(that._store)
+            log.debug('JSON path search: ' + fieldExpression, jsonpath.query(obj?.originalObject, "$" + fieldExpression))
+            let propertyValues = jsonpath.query(obj?.originalObject, "$" + fieldExpression)
+            if (propertyValues?.length < 1) {
+                return "null";
+            } else {
+                return JSON.stringify(propertyValues.at(0));
+            }
+        }, fieldExpression).on(that._store)
         this._fieldIndices.set(fieldExpression, idx);
+        log.debug(`Index ${fieldExpression} for ${that._gvk.kind} created`, `size=${idx.size}`)
     }
 
-    private legalGvk(obj: K8sApiObject): boolean {
+    private isLegalGvk(obj: K8sApiObject): boolean {
         if (!obj?.apiVersion || !obj?.kind) {
             // not a K8s Object
             return false;
@@ -223,7 +232,6 @@ export class CacheInformer extends EventEmitter {
      *  In this case objects in this item list does not have 'apiVersion' and 'kind' property.
      *   Will auto set it to current cached gvk.
      * @param objs Objects to add
-     * @constructor
      */
     public AddObjects(isListItems: boolean, ...objs: K8sApiObject[]) {
         let that = this;
@@ -232,7 +240,7 @@ export class CacheInformer extends EventEmitter {
                 obj.kind = that._gvk.kind;
                 obj.apiVersion = CheckedGroupVersion(that._gvk.group, that._gvk.version)
             }
-            if (!this.legalGvk(obj)) { // TODO: Is is necessary?
+            if (!this.isLegalGvk(obj)) {
                 log.debug("Object: ", JSON.stringify(obj))
                 log.error("Illegal object for this cache, skip.", `currentCachedGVK=${this._checkedGvk}`,
                     `ApiVersion=${obj?.apiVersion}, Kind=${obj?.kind}, Name=${obj?.metadata?.name}, uid=${obj?.metadata?.uid}`);
@@ -279,10 +287,5 @@ export class CacheInformer extends EventEmitter {
     public OnModified(handler: (...args: any[]) => void) {
         this.on(InformerEvent.MODIFIED, handler);
     }
-
-}
-
-
-export class InformersMap {
 
 }
