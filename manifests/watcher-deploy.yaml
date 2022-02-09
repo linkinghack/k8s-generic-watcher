@@ -1,8 +1,15 @@
 ---
 apiVersion: v1
+kind: Namespace
+metadata:
+  name: k8s-generic-watcher
+
+---
+apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: generic-watcher
+  namespace: k8s-generic-watcher
 automountServiceAccountToken: true
 
 ---
@@ -37,7 +44,7 @@ metadata:
 subjects:
 - kind: ServiceAccount
   name: generic-watcher # Name is case sensitive
-  namespace: default
+  namespace: k8s-generic-watcher
 roleRef:
   kind: ClusterRole
   name: watch-all
@@ -48,6 +55,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: generic-watcher-config
+  namespace: k8s-generic-watcher
 data:
   config.json: |
     {
@@ -88,6 +96,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: generic-watcher-deployment
+  namespace: k8s-generic-watcher
   labels:
     app: generic-watcher
 spec:
@@ -107,7 +116,7 @@ spec:
           name: generic-watcher-config
       containers:
       - name: generic-watcher
-        image: k8s-generic-watch:latest
+        image: linkinghack/k8s-generic-watcher:latest
         imagePullPolicy: IfNotPresent
         volumeMounts:
         - name: config
@@ -120,7 +129,7 @@ spec:
         resources:
           limits:
             cpu: 2000m
-            memory: 500Mi
+            memory: 2048Mi
           requests:
             cpu: 20m
             memory: 10Mi
@@ -130,6 +139,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: generic-watcher
+  namespace: k8s-generic-watcher
 spec:
   selector:
     app: generic-watcher

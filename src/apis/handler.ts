@@ -63,7 +63,7 @@ export class Handler {
      * POST <parent-path>/k8sObjects
      *
      * Notes:
-     *  If both 'name' and 'namespace' are specified or uid is specified, label/annotation selectors and fieldMatches will be ignored.
+     *  If both 'name' and 'namespace' are specified or 'uid' is specified, label/annotation selectors and fieldMatches will be ignored.
      *  Preference to parameters in request body.
      * @param req
      *   @QueryParameters:
@@ -88,7 +88,7 @@ export class Handler {
      *      {
      *          status: 200,
      *          msg: "",
-     *          data: {}
+     *          data: []
      *      }
      */
     public async QueryResource(req: express.Request, resp: express.Response) {

@@ -1,4 +1,4 @@
-name: K8s Generic Resources Watcher CI Actions
+name: GRW-CI
 on:
   push:
     branches:
