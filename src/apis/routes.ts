@@ -28,6 +28,9 @@ RootRouter.get('/', (req, resp) => {
  */
 QueryRouter.get('/k8sObjects', handler.QueryResource.bind(handler))
 QueryRouter.post('/k8sObjects', handler.QueryResource.bind(handler))
+QueryRouter.get('/apiGroups', handler.GetApiGroups.bind(handler))
+QueryRouter.get('/apiGroupResources', handler.GetApiApiGroupResources.bind(handler))
+QueryRouter.get('/cachedResourcesList', handler.GetAllCachedResources.bind(handler))
 
 /**
  * Manager router routes requests for managing watchers

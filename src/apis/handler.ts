@@ -162,4 +162,70 @@ export class Handler {
         }
     }
 
+    /**
+     *  Get Api groups list in the cluster.
+     * @param req
+     *   @QueryParam:
+     *     forceUpdate: 'true' or not set. Whether to force update the list in cache.
+     * @param resp
+     */
+    public async GetApiGroups(req: express.Request, resp: express.Response) {
+        let forceUpdateParam = req.query['forceUpdate'] as string;
+        try {
+            let forceUpdate = false;
+            if (forceUpdateParam == 'true') {
+                forceUpdate = true
+            }
+            let groups = await this._apiGroupDetector.GetApiGroups(forceUpdate);
+            resp.status(HttpStatus.OK);
+            resp.json(WatcherApiResponse.Ok('api groups', groups));
+            resp.end();
+        } catch (e) {
+            log.error(`Error get ApiGroups`, e)
+            resp.status(HttpStatus.INTERNAL_SERVER_ERROR);
+            resp.json(WatcherApiResponse.Result(HttpStatus.INTERNAL_SERVER_ERROR, 'error get api groups', e.message))
+            resp.end();
+        }
+    }
+
+    /**
+     * Get K8s resources list in a specified api group/version.
+     * @param req
+     *   @QueryParam:
+     *     group: Api group name.
+     *     version: Target version.
+     * @param resp
+     */
+    public async GetApiApiGroupResources(req: express.Request, resp: express.Response) {
+        let group = req.query['group'] as string;
+        let version = req.query['version'] as string;
+        let forceUpdateParam = req.query['forceUpdate'] as string;
+        try {
+            log.info(`Requesting api group resources list`, `group=${group}, version=${version}, forceUpdate=${forceUpdateParam}`)
+            if (!group || !version) {
+                resp.status(HttpStatus.NOT_FOUND);
+                resp.json(WatcherApiResponse.Result(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE, 'group or version not specified', `group=${group}, version=${version}`))
+            }
+            let forceUpdate = false;
+            if (forceUpdateParam == 'true') {
+                forceUpdate = true;
+            }
+            let detail = await this._apiGroupDetector.GetApiGroupResources(group, version, forceUpdate);
+            resp.status(HttpStatus.OK);
+            resp.json(WatcherApiResponse.Ok('resource list', detail))
+            resp.end();
+        } catch (e) {
+            log.error('Get resources in GV error', `group=${group}, version=${version}`, e)
+            resp.status(HttpStatus.INTERNAL_SERVER_ERROR);
+            resp.json(WatcherApiResponse.Result(HttpStatus.INTERNAL_SERVER_ERROR, 'error get resources list', e.message));
+            resp.end();
+        }
+    }
+
+    public GetAllCachedResources(req: express.Request, resp: express.Response) {
+        resp.status(HttpStatus.OK);
+        resp.json(WatcherApiResponse.Ok('resources', this._apiGroupDetector.AllCachedResource()));
+        resp.end()
+    }
+
 }

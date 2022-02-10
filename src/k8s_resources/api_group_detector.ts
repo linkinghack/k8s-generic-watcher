@@ -1,5 +1,12 @@
 import {K8sClient} from "../utils/k8s_client";
-import {APIGroup, APIGroupList, APIResourceList, IsApiGroupList, IsApiResourceList} from "./k8s_origin_types";
+import {
+    APIGroup,
+    APIGroupList,
+    APIResource,
+    APIResourceList,
+    IsApiGroupList,
+    IsApiResourceList
+} from "./k8s_origin_types";
 import logger from "../logger";
 import status from "http-status"
 import {
@@ -73,8 +80,8 @@ export class ApiGroupDetector {
         }
 
         // default group/versions
+        console.log("Groups before BuildCache: ", this._resourcesIdxGroup.keys())
         if (!this._resourcesIdxGroup.has(DefaultK8sGroup.Core)) {
-            console.log("Groups before BuildCache: ", this._resourcesIdxGroup.keys())
             await this.GetApiGroupResources(DefaultK8sGroup.Core, "v1", true);
         }
         if (!this._resourcesIdxGroup.has(DefaultK8sGroup.Apps)) {
@@ -242,6 +249,24 @@ export class ApiGroupDetector {
         }
     }
 
+    /**
+     * List all cached group/resources.
+     * Returned object have shape of { "group": [resource1, resources2, ..]}
+     */
+    public AllCachedResource(): {} {
+        log.info('List all cached ApiGroup resources list', `size=${this._cachedApiGroupResources.size}`);
+        let result = {};
+        this._resourcesIdxGroup.forEach((value, k) => {
+            if (!result[k]) {
+                result[k] = new Array<APIResource>();
+            }
+            value.forEach(c => {
+                result[k].push(c.originalApiResource);
+            })
+        })
+        return result;
+    }
+
     public async HasGroupVersion(group: string, version: string): Promise<boolean> {
         if (group == DefaultK8sGroup.Core || group == "") {
             // TODO: whether check version or not?
@@ -254,7 +279,7 @@ export class ApiGroupDetector {
         return this._groupVersionsSet.has(`${CheckedGroupVersion(group, version)}`);
     }
 
-    public SearchByKind(kind: string):ApiResourceCacheType[] {
+    public SearchByKind(kind: string): ApiResourceCacheType[] {
         let gvks = this._resourcesIdxKind.get(kind)
         if (!gvks) {
             return null;
