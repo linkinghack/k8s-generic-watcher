@@ -8,9 +8,9 @@
  - `group`: 资源API group，如 `networking.k8s.io`
  - `version`: 资源所属版本， 如 `v1`, `v2beta2`
  - `kind`: 资源类型，如 `Ingress`
- - `name`: (optional) 筛选资源对象名称, 匹配 `.metadata.name`
- - `namespace`: (optional) 筛选资源所属namespace, 匹配`.metadata.namespace`
- - `uid`: (optional) 精确查询指定uid对象， 匹配`.metadata.uid`
+ - `name`: (optional) 筛选资源对象名称, 匹配 `metadata.name`
+ - `namespace`: (optional) 筛选资源所属namespace, 匹配`metadata.namespace`
+ - `uid`: (optional) 精确查询指定uid对象， 匹配`metadata.uid`
 
 #### 请求体参数（仅POST时）
 相同参数，body中的配置优先级更高。
@@ -21,7 +21,22 @@
 
 - `labelSelectors`: `["key1", "value1", "key2", "value2",...]`
 - `annotationSelectors`: `["key1", "value1", "key2", "value2",...]`
-- `fieldMatches`: `["key1", "JSON-serialized value", ...]` 针对目标GVK的任意属性字段进行匹配。 key为字段表达式, 如`".spec.nodeName"`  其中value部分要进行JSON序列化，如 value 为整数123, 也要序列化为 "123"
+- `fieldMatches`: `["key1", "JSON-serialized value", ...]` 针对目标GVK的任意属性字段进行匹配。 
+key为字段表达式, 如`"spec.nodeName"`, `"spec.replicas"`; value 为欲匹配的此属性的值，针对属性不同的数据类型设置不同值类型。
+
+fieldMatches例子：查询apps/v1/Deployment:
+
+```json
+{
+  "group": "apps",
+  "version": "v1",
+  "kind": "Deployment",
+  "fieldMatches": [
+    "spec.replicas", 3,
+    "spec.selector.matchLabels", {"k8s-app": "kube-dns"}
+  ]
+}
+```
 
 header: 
 ```html

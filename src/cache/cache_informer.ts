@@ -100,7 +100,7 @@ export class CacheInformer extends EventEmitter {
         if (fieldMatches?.size > 0) {
             fieldMatches.forEach((value, fieldExp) => {
                 // check if this fieldIndex exists
-                log.debug("Searching by field:" + fieldExp, `currentCachedGVK=${this._checkedGvk}`)
+                log.debug(`Searching by field: ${fieldExp}, value=${value}`, `currentCachedGVK=${this._checkedGvk}`)
                 if (!that._fieldIndices.has(fieldExp)) {
                     that.AddFieldIndex(fieldExp);
                     log.debug("FieldIndex not found, add it.", "fieldExp=" + fieldExp, `currentCachedGVK=${this._checkedGvk}`)
@@ -189,20 +189,26 @@ export class CacheInformer extends EventEmitter {
 
     /**
      * Add an index for specified object field to accelerate search.
-     *   The value of specified field will be encoded as JSON string before stored in the index.
+     *   IMPORTANT!!!: The value of specified field will be encoded as JSON string before stored in the index.
      *   TODO: JSON parse before query with field index. ✅
-     * @param fieldExpression the field expression, like `.spec.template.name`
+     * @param fieldExpression the field expression, like `spec.template.name`
      */
     public AddFieldIndex(fieldExpression: string) {
         let that = this;
         let idx = nonuniqueIndex<K8sObjectCacheType, string>((obj) => {
-            log.debug('JSON path search: ' + fieldExpression, jsonpath.query(obj?.originalObject, "$" + fieldExpression))
-            let propertyValues = jsonpath.query(obj?.originalObject, "$" + fieldExpression)
-            if (propertyValues?.length < 1) {
+            log.debug('JSON path search: ' + fieldExpression, jsonpath.query(obj?.originalObject, "$." + fieldExpression))
+            try {
+                let propertyValues = jsonpath.query(obj?.originalObject, "$." + fieldExpression)
+                if (propertyValues?.length < 1) {
+                    return "null";
+                } else {
+                    return JSON.stringify(propertyValues.at(0));
+                }
+            } catch (e) {
+                log.error('JSONPath error while adding filed index', e);
                 return "null";
-            } else {
-                return JSON.stringify(propertyValues.at(0));
             }
+
         }, fieldExpression).on(that._store)
         this._fieldIndices.set(fieldExpression, idx);
         log.debug(`Index ${fieldExpression} for ${that._gvk.kind} created`, `size=${idx.size}`)
@@ -269,23 +275,22 @@ export class CacheInformer extends EventEmitter {
         if (this._idxUid.has(obj?.metadata?.uid)) {
             log.debug("Delete object in cache.", `ApiVersion=${obj?.apiVersion}, Kind=${obj?.kind}, Name=${obj?.metadata?.name}, uid=${obj?.metadata?.uid}`);
             this._store.delete(this._idxUid.get(obj?.metadata?.uid));
-            this.emit(InformerEvent.DELETED);
+            this.emit(InformerEvent.DELETED, obj);
         } else {
-            log.warn("Deleting an inexistent object", `currentCachedGVK=${this._checkedGvk}`,
+            log.warn("Deleting an object that does not exist", `currentCachedGVK=${this._checkedGvk}`,
                 `ApiVersion=${obj?.apiVersion}, Kind=${obj?.kind}, Name=${obj?.metadata?.name}, uid=${obj?.metadata?.uid}`);
         }
     }
 
-    public OnAdded(handler: (...args: any[]) => void) {
+    public OnAdded(handler: (objAdded: K8sApiObject) => void) {
         this.on(InformerEvent.ADDED, handler);
     }
 
-    public OnDeleted(handler: (...args: any[]) => void) {
+    public OnDeleted(handler: (objAdded: K8sApiObject) => void) {
         this.on(InformerEvent.DELETED, handler);
     }
 
-    public OnModified(handler: (...args: any[]) => void) {
+    public OnModified(handler: (oldObj: K8sApiObject, newObj: K8sApiObject) => void) {
         this.on(InformerEvent.MODIFIED, handler);
     }
-
 }

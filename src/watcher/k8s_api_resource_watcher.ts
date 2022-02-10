@@ -137,7 +137,7 @@ export class K8sApiObjectWatcher extends EventEmitter {
                         that.analyzeEventObject(that._watcherStringBuf.toString());
                     } catch (e) {
                         // TODO: whether re-list resources?
-                        log.error("parse ")
+                        log.error("parse event object error", e)
                     }
                     that._watcherStringBuf = "";
                     chunkStr = chunkStr.substring(endPos + 1);
@@ -163,7 +163,7 @@ export class K8sApiObjectWatcher extends EventEmitter {
                 this._cacheInformer.DeleteObject(eventObj.object);
                 break;
             default:
-                log.warn(`Unknown watch event type: ${eventObj.type}`, `event message head: ${objStr.substring(0, 100)}`);
+                log.error(`Unknown watch event type: ${eventObj.type}`, `event message head: ${objStr.substring(0, 100)}`);
                 log.debug("Unknown watch event object", eventObj);
         }
     }

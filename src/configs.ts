@@ -1,7 +1,6 @@
 import * as fs from "fs";
 import {GVK, InitialWatchResource} from "./k8s_resources/inner_types";
 import {homedir} from "os";
-import * as types from "./types";
 import {K8sClientOptions} from "./utils/k8s_client";
 
 export class GlobalConfig {

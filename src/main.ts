@@ -6,7 +6,7 @@ import {container} from "tsyringe";
 // 1. Load config file
 LoadConfig();
 
-// 2. inject default configs to tsyringe container.
+// 2. inject default configs into tsyringe container.
 container.registerInstance("preIndexingGVs", GetConfig().initialWatchingResources)
 container.registerInstance(K8sClientOptions, GetConfig().k8sClientConfig);
 
