@@ -114,17 +114,3 @@ export interface WatchEvent {
     type: string,
     object: K8sApiObject
 }
-
-export const K8sApiQueryParameterNames = {
-    resourceVersion: "resourceVersion",
-    resourceVersionMatch: "resourceVersionMatch",
-    watch: "watch",
-    timeoutSeconds: "timeoutSeconds",
-    fieldSelector: "fieldSelector",
-    labelSelector: "labelSelector"
-}
-
-export const K8sApiQueryParamValues = {
-    WatchEnabled: "true",
-    WatchDisabled: "false"
-}

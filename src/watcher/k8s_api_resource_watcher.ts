@@ -1,12 +1,11 @@
 import {K8sClient} from "../utils/k8s_client";
-import {ApiResourceCacheType, GVK} from "../k8s_resources/inner_types";
 import {
-    K8sApiObject,
-    K8sApiObjectList,
+    ApiResourceCacheType,
+    GVK,
     K8sApiQueryParameterNames,
-    K8sApiQueryParamValues,
-    WatchEvent
-} from "../k8s_resources/k8s_origin_types";
+    K8sApiQueryParamValues
+} from "../k8s_resources/inner_types";
+import {K8sApiObject, K8sApiObjectList, WatchEvent} from "../k8s_resources/k8s_origin_types";
 import {EventEmitter} from "stream";
 import {ApiGroupDetector} from "../k8s_resources/api_group_detector";
 import {CacheInformer, InformerEvent} from "../cache/cache_informer";

@@ -54,7 +54,6 @@ body:
   "uid": string,
   "labelSelectors": Array<any>,
   "annotationSelectors": Array<any>,
-  "fieldMatches": Array<any>,
-  "dedicatedIndex": boolean
+  "fieldMatches": Array<any>
 }
 ```

@@ -53,11 +53,25 @@ export interface ApiResourceCacheType {
     version: string,
     kind: string,
     /**
-     * _resourceType is the "resource type" described in the K8 official document.
+     * resource is the "resource type" described in the K8 official document.
      *   such as 'pods', 'deployments', 'namespaces', etc.
      * ref: https://kubernetes.io/docs/reference/using-api/api-concepts/#standard-api-terminology
      */
     resource: string,
     gvk: string, // "<group>/<version>/<kind>"
     originalApiResource: APIResource
+}
+
+export const K8sApiQueryParameterNames = {
+    resourceVersion: "resourceVersion",
+    resourceVersionMatch: "resourceVersionMatch",
+    watch: "watch",
+    timeoutSeconds: "timeoutSeconds",
+    fieldSelector: "fieldSelector",
+    labelSelector: "labelSelector"
+}
+
+export const K8sApiQueryParamValues = {
+    WatchEnabled: "true",
+    WatchDisabled: "false"
 }
