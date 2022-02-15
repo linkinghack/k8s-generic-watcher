@@ -1,4 +1,5 @@
 import {ApiResourceCacheType} from "../k8s_resources/inner_types";
+import logger from "../logger";
 
 export enum DefaultK8sGroup {
     Core = "core",
@@ -13,6 +14,8 @@ export enum DefaultUrlPath {
     GroupBatch = "/apis/batch",
     ApiGroups = "/apis"
 }
+
+const log = logger.getChildLogger({name: "k8s-name-format"});
 
 /**
  * Construct the URL to request APIServer for an "APIResourceList".
@@ -58,8 +61,8 @@ export function GVRUrl(apiResource: ApiResourceCacheType, namespace?: string, na
  * @param version group api version
  */
 export function CheckedGroupVersion(group: string, version: string) {
-    group = group.toLocaleLowerCase();
-    version = version.toLocaleLowerCase();
+    group = group.toLowerCase();
+    version = version.toLowerCase();
     if (group == "core" || group == "") {
         return version;
     } else {
@@ -67,6 +70,30 @@ export function CheckedGroupVersion(group: string, version: string) {
     }
 }
 
-export function CheckedGVK(group: string, version: string, kind: string):string {
+export function CheckedGVK(group: string, version: string, kind: string): string {
     return `${CheckedGroupVersion(group, version)}/${kind}`;
+}
+
+export function SplitGVK(gvk: string): { group: string, version: string, kind: string } {
+    let result = {group: "", version: "", kind: ""};
+    if (!gvk || typeof gvk != 'string') {
+        return result;
+    }
+
+    let split = gvk.split('/')
+    switch (split?.length) {
+        case 2:
+            result.group = 'core';
+            result.version = split[0];
+            break;
+        case 3:
+            result.group = split[0];
+            result.version = split[1];
+            result.kind = split[2];
+            break;
+        default:
+            log.warn('SplitGVK: unrecognized gvk format.', gvk)
+    }
+
+    return result;
 }

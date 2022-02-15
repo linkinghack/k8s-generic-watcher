@@ -89,10 +89,11 @@ export class K8sClient {
             } else {
                 switch (this._options.authType as string) {
                     case types.AuthTypeBearerToken:
-                        log.info(`Creating K8sClinet with type BearerToken`)
+                        log.info(`Creating K8sClient with type BearerToken`)
                         this.createHttp2ClientWithToken(this._apiServerUrl, this._options.tokenFilePath, this._options.caCertPath);
                         break;
                     case types.AuthTypeClientCertificate:
+                        log.info("Creating K8sClient with type ClientCertificate")
                         if (this._options.clientKeyPath.length > 0) {
                             let pems = this.clientCertsBase64Decode(this._options.clientCertDataPemBase64, this._options.clientKeyDataPemBase64, this._options.caCertDataPemBase64);
                             this.createHttp2ClientWithClientCertData(this._apiServerUrl, pems.clientCertPem, pems.clientKeyPem, pems.caCertPem);

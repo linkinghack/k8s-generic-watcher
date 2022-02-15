@@ -14,6 +14,7 @@ import {GVRUrl} from "../utils/k8s_name_format";
 import HttpStatus from "http-status";
 import logger from "../logger";
 import * as http2 from "http2";
+import {WatcherEventNotifier} from "../notifier/notifier_iface";
 
 const log = logger.getChildLogger({name: "K8sApiObjectWatcher"});
 
@@ -77,6 +78,18 @@ export class K8sApiObjectWatcher extends EventEmitter {
         this._cacheInformer = new CacheInformer(gvk);
     }
 
+    public RegisterNotifier(notifier?: WatcherEventNotifier) {
+        if (notifier.SubscribingEvent(InformerEvent.ADDED)) {
+            this._cacheInformer.OnAdded(notifier.NotifyObjectAdd.bind(notifier));
+        }
+        if (notifier.SubscribingEvent(InformerEvent.MODIFIED)) {
+            this._cacheInformer.OnModified(notifier.NotifyObjectModify.bind(notifier));
+        }
+        if (notifier.SubscribingEvent(InformerEvent.DELETED)) {
+            this._cacheInformer.OnDeleted(notifier.NotifyObjectDelete.bind(notifier));
+        }
+    }
+
     /**
      * List and cache target GVK object and start to watch.
      *  Error should be cached by caller.
@@ -123,7 +136,7 @@ export class K8sApiObjectWatcher extends EventEmitter {
             log.info("Watch response received.", `headers=${JSON.stringify(headers)}`, `flags=${flags}`);
         })
         this._h2Session.on('data', (chunk) => {
-            log.debug("Watcher http2 stream message received")
+            log.debug("Watcher http2 stream message received", `watcher: gvk=${that._gvk.group}/${that._gvk.version}/${that._gvk.version}`)
             let chunkStr = chunk.toString();
             for (; chunkStr.length > 0;) {
                 let endPos = chunkStr.indexOf("\n", 0);

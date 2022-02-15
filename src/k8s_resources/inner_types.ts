@@ -3,6 +3,7 @@
  */
 import {APIResource} from "./k8s_origin_types";
 import {WatcherOptions} from "../watcher/k8s_api_resource_watcher";
+import {K8sObjectsQueryParams} from "../types";
 
 export interface GVK {
     group: string;
@@ -11,7 +12,12 @@ export interface GVK {
 }
 
 export interface InitialWatchResource extends GVK{
-    watchOptions?: WatcherOptions
+    watchOptions?: WatcherOptions,
+    notifiers?: [{
+        webhookUrls: string[],
+        filter?: K8sObjectsQueryParams,
+        eventTypes: string[]
+    }]
 }
 
 export class KVMatcher {

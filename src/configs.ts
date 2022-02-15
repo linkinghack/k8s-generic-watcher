@@ -13,8 +13,14 @@ export class GlobalConfig {
         group: "core",
         version: "v1",
         kind: "Pod",
-    } as GVK, {group: "apps", version: "v1", kind: "Deployment"} as GVK];
-    initialWebHookUrls: Array<string> = ["http://localhost:8080/k8sResourceUpdated"];
+        watchOptions: null, // TODO: Use dedicated Watcher (instead of global watcher for this GVK) for specific watch options
+        notifiers:[{
+            webhookUrls: ["http://localhost:8080/PodUpdated"],
+            filter: {namespace: "default"},
+            eventTypes: ["ADDED", "MODIFIED", "DELETED"]
+        }]
+    } , {group: "apps", version: "v1", kind: "Deployment"} as GVK];
+    globalWebhookUrls:string[] = ["http://localhost:8080/k8sResourceUpdated"];
 
     // ApiGroup detector configs
     enableSyncApiGroups: boolean = true;
@@ -22,10 +28,10 @@ export class GlobalConfig {
 
     k8sClientConfig: K8sClientOptions = {
         apiServerUrl: "https://kubernetes.default",
-        authType: "ClientCert",
+        authType: "KubeConfig",
         kubeConfigFilePath: "",
         autoInClusterConfig: true,
-        autoKeepAlive: false,
+        autoKeepAlive: true,
         autoReconnect: false,
         caCertDataPemBase64: "",
         caCertPath: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
@@ -52,6 +58,7 @@ export function LoadConfig() {
     if (inCluster == 'true') {
         globalConfig.k8sClientConfig.autoInClusterConfig = true;
     }
+    console.log("ConfigLoaded: ", globalConfig)
     configLoaded = true;
 }
 

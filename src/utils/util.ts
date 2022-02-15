@@ -59,18 +59,18 @@ export function ArrayToMap(arr: Array<any>): Map<string, any> {
 }
 
 /**
- * Checks 'obj' if it meets all the matching conditions in 'matchParam'
+ * Checks 'obj' if it meets all the matching conditions in 'matchParam'.
  * @param obj The K8s Api object to check
- * @param matchParam match conditions
+ * @param matchParam Match conditions. Only non-null params will be checked.
  */
 export function MatchK8sObject(obj: K8sApiObject, matchParam: K8sObjectsQueryParams): boolean {
     try {
-        assert.equal(obj.apiVersion, CheckedGroupVersion(matchParam.group, matchParam.version));
-        assert.equal(obj.kind, matchParam.kind);
+        if (matchParam.group && matchParam.version) assert.equal(obj?.apiVersion, CheckedGroupVersion(matchParam.group, matchParam.version));
+        if (obj.kind) assert.equal(obj?.kind, matchParam.kind);
 
-        if (matchParam.namespace) assert.equal(obj.metadata.namespace, matchParam.namespace);
-        if (matchParam.name) assert.equal(obj.metadata.name, matchParam.name);
-        if (matchParam.uid) assert.equal(obj.metadata.uid, matchParam.uid);
+        if (matchParam.namespace) assert.equal(obj?.metadata.namespace, matchParam.namespace);
+        if (matchParam.name) assert.equal(obj?.metadata.name, matchParam.name);
+        if (matchParam.uid) assert.equal(obj?.metadata.uid, matchParam.uid);
 
         if (matchParam.fieldMatches?.length > 0) {
             let fieldMatches = ArrayToMap(matchParam.fieldMatches)
@@ -107,7 +107,7 @@ export function MatchK8sObject(obj: K8sApiObject, matchParam: K8sObjectsQueryPar
             log.debug('Obj does not match matchParam', e)
         } else {
             log.error('Error happened while matching K8sApiObject with matchParam', `matchParam=${matchParam}`,
-                `gvk=${obj.apiVersion}/${obj.kind}, name=${obj.metadata.name}, namespace=${obj.metadata.namespace}`);
+                `gvk=${obj?.apiVersion}/${obj?.kind}, name=${obj?.metadata.name}, namespace=${obj?.metadata.namespace}`);
             log.error(e);
         }
         return false

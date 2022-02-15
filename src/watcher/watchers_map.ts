@@ -15,12 +15,13 @@ export class WatchersMap {
         this._watchers = new Map<string, K8sApiObjectWatcher>();
     }
 
-    public async AddWatcher(gvk: GVK, options?: WatcherOptions) {
+    public async AddWatcher(gvk: GVK, options?: WatcherOptions): Promise<K8sApiObjectWatcher> {
         if (!this._watchers.has(CheckedGVK(gvk.group, gvk.version, gvk.kind))) {
             log.info("Creating new resource watcher.", `GVK=${JSON.stringify(gvk)}, options=${JSON.stringify(options)}`);
             let w = new K8sApiObjectWatcher(gvk, options, container.resolve(K8sClient), container.resolve(ApiGroupDetector));
             await w.Start();
             this._watchers.set(CheckedGVK(gvk.group, gvk.version, gvk.kind), w);
+            return w;
         }
     }
 

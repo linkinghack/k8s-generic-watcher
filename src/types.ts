@@ -32,13 +32,13 @@ export class WatcherApiResponse {
 }
 
 export interface K8sObjectsQueryParams {
-    group: string,
-    version: string,
-    kind: string,
+    group?: string,
+    version?: string,
+    kind?: string,
     name?: string,
     namespace?: string,
-    uid: string,
+    uid?: string,
     labelSelectors?: Array<any>,
-    annotationSelectors: Array<any>,
+    annotationSelectors?: Array<any>,
     fieldMatches?: Array<any>
 }
