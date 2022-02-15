@@ -1,6 +1,6 @@
 import {WatcherEventNotificationMessage, WatcherEventNotifier} from "./notifier_iface";
 import {InformerEvent} from "../cache/cache_informer";
-import {CheckedGVK, SplitGVK} from "../utils/k8s_name_format";
+import {SplitGVK} from "../utils/k8s_name_format";
 import logger from "../logger";
 import {K8sObjectsQueryParams} from "types";
 import {MatchK8sObject} from "../utils/util";
@@ -102,12 +102,12 @@ export class WebHookNotifier implements WatcherEventNotifier {
         notification.kind = splittedGvk?.kind;
         let resp = await fetch(this._webhookUrl, {
             body: JSON.stringify(notification),
-            headers: { 'Content-Type': 'application-json'},
+            headers: {'Content-Type': 'application-json'},
             method: 'POST',
 
         })
         log.info('Webhook notification request have sent.', `url=${this._webhookUrl}, gvk=${gvk}`, `response-status=${resp.status}`)
-        log.debug(`url=${this._webhookUrl}, gvk=${gvk}` ,`responseBody=${await resp.text()}`)
+        log.debug(`url=${this._webhookUrl}, gvk=${gvk}`, `responseBody=${await resp.text()}`)
     }
 
     public SubscribingEvent(type: string): boolean {

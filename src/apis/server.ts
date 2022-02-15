@@ -9,6 +9,7 @@ export interface ServerOptions {
     listenPort: number,
     loggerFormat?: string  // morgan logger format config
 }
+
 export class WebServer {
     private _expressApp: express.Application
     private _server: http.Server
@@ -33,11 +34,11 @@ export class WebServer {
             let addr = that._server.address();
             let bind = typeof addr === 'string'
                 ? 'pipe ' + addr
-                :  addr.address + ':' + addr.port
+                : addr.address + ':' + addr.port
             log.info(`WebServer listening on ${bind}`)
         })
         this._server.on("connection", socket => {
-            log.info(`Client connection established, client: ${JSON.stringify(socket.address())}` )
+            log.info(`Client connection established, client: ${JSON.stringify(socket.address())}`)
         })
         this._server.on("error", err => {
             log.error("WebServer panic", err);
@@ -48,7 +49,7 @@ export class WebServer {
         this._server.listen(this._options.listenPort)
     }
 
-    public RegisterRouter(path:string, router: express.Router) {
+    public RegisterRouter(path: string, router: express.Router) {
         this._expressApp.use(path, router);
     }
 

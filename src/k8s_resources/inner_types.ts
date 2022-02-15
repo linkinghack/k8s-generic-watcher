@@ -11,12 +11,12 @@ export interface GVK {
     kind: string;
 }
 
-export interface InitialWatchResource extends GVK{
+export interface InitialWatchResource extends GVK {
     watchOptions?: WatcherOptions,
     notifiers?: [{
         webhookUrls: string[],
         filter?: K8sObjectsQueryParams,
-        eventTypes: string[]
+        eventTypes?: string[]
     }]
 }
 

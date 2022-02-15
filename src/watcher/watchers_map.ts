@@ -11,6 +11,7 @@ const log = logger.getChildLogger({name: "WatchersMap"});
 @singleton()
 export class WatchersMap {
     private _watchers: Map<string, K8sApiObjectWatcher>;
+
     constructor() {
         this._watchers = new Map<string, K8sApiObjectWatcher>();
     }

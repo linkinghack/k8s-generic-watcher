@@ -1,3 +1,5 @@
+import {readFileSync} from "fs";
+
 class MyMap<TK, TV> extends Map<TK, TV> {
     constructor() {
         super();
@@ -29,4 +31,13 @@ function testParseMap() {
     console.log(obj.list instanceof Array) // true
 }
 
-testParseMap();
+// testParseMap();
+
+function testParseYaml() {
+    let originStr = readFileSync("tmp.json").toString();
+    let replaced = originStr.replaceAll("\\n", "\n")
+    console.log(replaced)
+
+}
+
+testParseYaml();

@@ -34,11 +34,15 @@ GRW的目标是通用API资源对象的状态监控、支撑高频率的资源�
 
 详细参考：[功能特性文档](./docs/features.md)
 
+### API 参考
+详见：[API Spec](./docs/api_spec.md)
+
 ---
 ## 开始使用
 ### 构建和运行
 环境要求： 
-- NodeJS 1.16+
+- NodeJS 16+
+- Kubernetes 1.17+, ApiServer MUST support HTTP2
 - Docker （或其他容器运行时）， 若要构建容器镜像
 ```bash
 # 安装依赖
@@ -56,31 +60,57 @@ node dist/main.js
 GRW更推荐的用法是与平台应用部署在一起，作为一个sidecar出现。`manifest/watcher-deploy.yaml`仅提供K8s部署参考。
 
 ```bash
-kubectl apply -f ./manifest/deploy.yaml
+kubectl apply -f ./manifests/deploy.yaml
 ```
 
 
 ### 配置
- 1. 指定配置文件：设置环境变量`CONFIG_FILE_PATH` 为配置文件位置， 默认当前目录
+ 1. 指定配置文件：设置环境变量`CONFIG_FILE_PATH` 为配置文件位置. 配置文件使用JSON格式，可以通过ConfigMap作为Volume挂载进容器中
  2. 配置文件配置项：
-    配置文件使用JSON格式，可以通过ConfigMap作为Volume挂载进容器中
- 3. K8sClient配置：
-    1. authType: ApiServer认证方式，可选`KubeConfig`, `BearerToken`, `ClientCertificate`, 仅当`autoInClusterConfig`为false时有效。
-    2. autoInClusterConfig: boolean  是否在集群中运行，为true时自动使用容器中的Secret数据完成ApiServer认证，需要提前配置好ServiceAccount的RBAC。
-    3. 使用`authType=KubeConfig` + `autoInclusterConfig=false` 模式 或 `autoInclusterConfig=true`模式时均无需指定ApiServerUrl, CA配置信息, Token配置等。 （配置被忽略）。
+    1. K8sClient配置： **在生产环境中通常在集群内部署，此时仅需要将`autoInClusterConfig`设置为true即可，其他配置不需设置。**
+       1. authType: ApiServer认证方式，可选`KubeConfig`, `BearerToken`, `ClientCertificate`, 仅当`autoInClusterConfig`为false时有效。
+       2. autoInClusterConfig: boolean  是否在集群中运行，为true时自动使用容器中的Secret数据完成ApiServer认证，需要提前配置好ServiceAccount的RBAC。
+       3. 使用`authType=KubeConfig` + `autoInclusterConfig=false` 模式 或 `autoInclusterConfig=true`模式时均无需指定ApiServerUrl, CA配置信息, Token配置等。 （配置被忽略）。
+    2. 初始监控资源对象列表：`initialWatchingResources` 配置项是一个对象数组，用于指定默认建立缓存和索引的资源类型，并可设置此类对象变更事件webhook通知地址。
+       1. 必填项：`group`, `version`, `kind`
+       2. `notifiers`（可选）: 对象数组；每个配置中`webhookUrls`必填，指定一个或多个HTTP url；`eventTypes`指定要订阅本类GVK的事件类型，不指定则订阅所有类型(ADDED, MODIFIED, DELETED)；`filter`可选，配置通知事件发出时过滤对象的条件，同查询API中查询参数一致。
+       3. `globalWebhookUrls`: 附加的可选配置，指定接受所有initialWatchingResources中的资源事件
+
+> config.json:
  ```json
 {
-  "minLogLevel": "trace",
-  "logType": "pretty",
-  "listenAddress": "0.0.0.0:9000",
+  "minLogLevel": "trace", // silly, trace, debug, info, warn, error, fatal
+  "logType": "json", // json, pretty
+  "listenPort": 3000,
   "initialWatchingResources": [
     {
       "group": "core",
       "version": "v1",
-      "kind": "Pod"
+      "kind": "Pod",
+      "watchOptions": null,
+      "notifiers": [
+        {
+          "webhookUrls": [
+            "http://localhost:8080/PodUpdated"
+          ],
+          "filter": {
+            "namespace": "default"
+          },
+          "eventTypes": [
+            "ADDED",
+            "MODIFIED",
+            "DELETED"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "apps",
+      "version": "v1",
+      "kind": "Deployment"
     }
   ],
-  "initialWebHookUrls": [
+  "globalWebhookUrls": [
     "http://localhost:8080/k8sResourceUpdated"
   ],
   "enableSyncApiGroups": true,
@@ -88,9 +118,9 @@ kubectl apply -f ./manifest/deploy.yaml
   "k8sClientConfig": {
     "apiServerUrl": "https://kubernetes.default",
     "authType": "KubeConfig",
-    "kubeConfigFilePath": "~/.kube/config",
+    "kubeConfigFilePath": "",
     "autoInClusterConfig": false,
-    "autoKeepAlive": false,
+    "autoKeepAlive": true,
     "autoReconnect": false,
     "caCertDataPemBase64": "",
     "caCertPath": "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
@@ -102,6 +132,3 @@ kubectl apply -f ./manifest/deploy.yaml
   }
 }
  ```
-
-### API 参考
-相见：[API Spec](./docs/api_spec.md)

@@ -1,8 +1,11 @@
 export interface WatcherEventNotifier {
     NotifyObjectAdd(obj: any): void,
+
     NotifyObjectModify(old: any, newObj: any): void,
+
     NotifyObjectDelete(obj: any): void
-    SubscribingEvent(type:string): boolean
+
+    SubscribingEvent(type: string): boolean
 }
 
 export interface WatcherEventNotificationMessage {

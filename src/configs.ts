@@ -14,13 +14,13 @@ export class GlobalConfig {
         version: "v1",
         kind: "Pod",
         watchOptions: null, // TODO: Use dedicated Watcher (instead of global watcher for this GVK) for specific watch options
-        notifiers:[{
+        notifiers: [{
             webhookUrls: ["http://localhost:8080/PodUpdated"],
             filter: {namespace: "default"},
             eventTypes: ["ADDED", "MODIFIED", "DELETED"]
         }]
-    } , {group: "apps", version: "v1", kind: "Deployment"} as GVK];
-    globalWebhookUrls:string[] = ["http://localhost:8080/k8sResourceUpdated"];
+    }, {group: "apps", version: "v1", kind: "Deployment"} as GVK];
+    globalWebhookUrls: string[] = ["http://localhost:8080/k8sResourceUpdated"];
 
     // ApiGroup detector configs
     enableSyncApiGroups: boolean = true;
