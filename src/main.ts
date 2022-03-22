@@ -1,11 +1,7 @@
 import 'reflect-metadata';
 import {GetConfig, LoadConfig} from "./configs";
-import {K8sClientOptions} from "./utils/k8s_client";
 import {container} from "tsyringe";
-import RootRouter from "./apis/routes";
-import {WebServer} from "./apis/server";
-import {WatchersMap} from "./watcher/watchers_map";
-import {WebHookNotifier} from "./notifier/webhook_notifier";
+import {K8sClientOptions} from "./utils/k8s_client";
 
 // 1. Load config file
 LoadConfig();
@@ -13,6 +9,11 @@ LoadConfig();
 // 2. inject default configs into tsyringe container.
 container.registerInstance("preIndexingGVs", GetConfig().initialWatchingResources)
 container.registerInstance(K8sClientOptions, GetConfig().k8sClientConfig);
+
+import RootRouter from "./apis/routes";
+import { WebServer } from "./apis/server";
+import { WatchersMap } from "./watcher/watchers_map";
+import { WebHookNotifier } from "./notifier/webhook_notifier";
 
 // 3. Create watchers for initial watching resources
 let watchersMap = container.resolve(WatchersMap);
