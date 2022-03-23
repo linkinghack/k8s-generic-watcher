@@ -35,7 +35,7 @@ QueryRouter.get('/cachedResourcesList', handler.GetAllCachedResources.bind(handl
 /**
  * Manager router routes requests for managing watchers
  */
-
+ManageRouter.get("/cacheSize", handler.GetCachedObjectsCount.bind(handler))
 
 /**
  * Dashboard router routes request for GUI dashboard.

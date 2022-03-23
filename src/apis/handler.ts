@@ -8,6 +8,7 @@ import {ApiGroupDetector} from "../k8s_resources/api_group_detector";
 import {K8sApiObject} from "../k8s_resources/k8s_origin_types";
 import {ArrayToMap, K8sApiObjectsIntersect} from "../utils/util"
 import {GVKNotFoundError} from "../error";
+import httpStatus from "http-status";
 
 const log = logger.getChildLogger({name: "Handler"});
 
@@ -201,7 +202,7 @@ export class Handler {
         let version = req.query['version'] as string;
         let forceUpdateParam = req.query['forceUpdate'] as string;
         try {
-            log.info(`Requesting api group resources list`, `group=${group}, version=${version}, forceUpdate=${forceUpdateParam}`)
+            log.debug(`Requesting api group resources list`, `group=${group}, version=${version}, forceUpdate=${forceUpdateParam}`)
             if (!group || !version) {
                 resp.status(HttpStatus.NOT_FOUND);
                 resp.json(WatcherApiResponse.Result(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE, 'group or version not specified', `group=${group}, version=${version}`))
@@ -228,4 +229,30 @@ export class Handler {
         resp.end()
     }
 
+    public GetCachedObjectsCount(req: express.Request, resp: express.Response) {
+        let that = this;
+        let group: string = req.query['group'] as string;
+        let version: string = req.query['version'] as string;
+        let kind: string = req.query['kind'] as string;
+
+        log.debug("Get cache size", `Group=${group}, version=${version}, Kind=${kind}`)
+        try {
+            let gvk = {group: group, version: version, kind: kind}
+            let watcher = that._watcherMap.GetWatcher(gvk);
+            log.debug(`Watcher: ${watcher}`)
+            let count = 0;
+            if (watcher) {
+                count = watcher.CachedObjectsCount()
+                log.debug("Watcher cache size", count)
+            }
+            resp.status(httpStatus.OK);
+            resp.json(WatcherApiResponse.Ok('cached objecs count', count))
+            resp.end() 
+        } catch(e) {
+            log.error('Get cached size error', `group=${group}, version=${version}`, e)
+            resp.status(HttpStatus.INTERNAL_SERVER_ERROR);
+            resp.json(WatcherApiResponse.Result(HttpStatus.INTERNAL_SERVER_ERROR, 'error get cached objects count', e.message));
+            resp.end();
+        }
+    }
 }

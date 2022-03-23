@@ -133,10 +133,10 @@ export class K8sApiObjectWatcher extends EventEmitter {
         let that = this;
         that._watcherStringBuf = String("");
         this._h2Session.on('response', (headers, flags) => {
-            log.info("Watch response received.", `headers=${JSON.stringify(headers)}`, `flags=${flags}`);
+            log.debug("Watch response received.", `headers=${JSON.stringify(headers)}`, `flags=${flags}`);
         })
         this._h2Session.on('data', (chunk) => {
-            log.debug("Watcher http2 stream message received", `watcher: gvk=${that._gvk.group}/${that._gvk.version}/${that._gvk.version}`)
+            log.debug("Watcher http2 stream message received", `watcher: gvk=${that._gvk.group}/${that._gvk.version}/${that._gvk.kind}`)
             let chunkStr = chunk.toString();
             for (; chunkStr.length > 0;) {
                 let endPos = chunkStr.indexOf("\n", 0);
@@ -219,5 +219,9 @@ export class K8sApiObjectWatcher extends EventEmitter {
 
     public QueryByLabelAnnotation(labelSelectors?: Map<string, string>, annotations?: Map<string, string>, namespace?: string): K8sApiObject[] {
         return this._cacheInformer.SearchObjectsByLabelSelector(labelSelectors, annotations, namespace);
+    }
+
+    public CachedObjectsCount(): number {
+        return this._cacheInformer.CacheSize()
     }
 }

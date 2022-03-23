@@ -75,7 +75,7 @@ export class CacheInformer extends EventEmitter {
         }
 
         if (uid) {
-            log.info("Searching by uid", "uid=" + uid, `currentCachedGVK=${this._checkedGvk}`)
+            log.debug("Searching by uid", "uid=" + uid, `currentCachedGVK=${this._checkedGvk}`)
             return [this._idxUid.get(uid).originalObject]
         }
 
@@ -280,6 +280,12 @@ export class CacheInformer extends EventEmitter {
             log.warn("Deleting an object that does not exist", `currentCachedGVK=${this._checkedGvk}`,
                 `ApiVersion=${obj?.apiVersion}, Kind=${obj?.kind}, Name=${obj?.metadata?.name}, uid=${obj?.metadata?.uid}`);
         }
+    }
+
+    public CacheSize(): number {
+        let size = 0;
+        this._idxName.forEach(()=> {size++})
+        return size
     }
 
     public OnAdded(handler: (objAdded: K8sApiObject) => void) {
