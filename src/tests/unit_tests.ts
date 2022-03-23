@@ -1,11 +1,13 @@
 import "reflect-metadata"
 import {PrintConfigFileExample} from "../configs";
-import {testK8sResources} from "./k8s_client_test";
+import {testCreatPlentyOfPods, testK8sResources} from "./k8s_client_test";
 
 
 // testK8sClientCreation()
-testK8sResources()
+// testK8sResources()
 // testGetApiGroups();
 // testGetApiGroupResource();
 
-PrintConfigFileExample();
+// PrintConfigFileExample();
+
+testCreatPlentyOfPods()

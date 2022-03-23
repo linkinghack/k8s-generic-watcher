@@ -26,7 +26,9 @@ export class WebServer {
         if (ops.loggerFormat) {
             this._expressApp.use(morgan(ops.loggerFormat));
         } else {
-            this._expressApp.use(morgan(':date[iso]  - method=:method url=:url status=:status content-length=:res[content-length] - :response-time ms'))
+            this._expressApp.use(morgan(':date[iso]  - method=:method url=:url status=:status content-length=:res[content-length] - :response-time ms', {
+                skip: function(req, res) { return res.statusCode < 400}
+            }))
         }
 
         let that = this
@@ -38,7 +40,7 @@ export class WebServer {
             log.info(`WebServer listening on ${bind}`)
         })
         this._server.on("connection", socket => {
-            log.info(`Client connection established, client: ${JSON.stringify(socket.address())}`)
+            log.debug(`Client connection established, client: ${JSON.stringify(socket.address())}`)
         })
         this._server.on("error", err => {
             log.error("WebServer panic", err);
