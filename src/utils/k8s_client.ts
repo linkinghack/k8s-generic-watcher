@@ -7,15 +7,15 @@
 import * as http2 from "node:http2";
 import * as types from "../types";
 import * as fs from "node:fs";
-import {SecureContextOptions} from "node:tls";
-import {setInterval} from "node:timers";
+import { SecureContextOptions } from "node:tls";
+import { setInterval } from "node:timers";
 import logger from "../logger";
 import yaml from "yaml";
-import {homedir} from "os";
+import { homedir } from "os";
 import * as Base64 from 'base64-arraybuffer';
-import {inject, singleton} from "tsyringe";
+import { inject, singleton } from "tsyringe";
 
-const log = logger.getChildLogger({name: "K8sClient"});
+const log = logger.getChildLogger({ name: "K8sClient" });
 
 export class K8sClientOptions {
     /**
@@ -174,6 +174,57 @@ export class K8sClient {
         })
     }
 
+    public async post(path: string, body: Buffer, contentType: string, outgoingHeaders?: http2.OutgoingHttpHeaders): Promise<Result> {
+        let that = this;
+        return new Promise<Result>((resolve, reject) => {
+            try {
+                if (!outgoingHeaders) {
+                    outgoingHeaders = {} as http2.OutgoingHttpHeaders
+                }
+
+                outgoingHeaders[http2.constants.HTTP2_HEADER_METHOD] = 'POST';
+                outgoingHeaders[http2.constants.HTTP2_HEADER_CONTENT_LENGTH] = body?.length
+                outgoingHeaders[http2.constants.HTTP2_HEADER_CONTENT_TYPE] = contentType
+
+                let result = {} as Result
+
+                let req = that.request(path, outgoingHeaders)
+                let respData = []
+                req.on('data', (chunk) => {
+                    respData.push(chunk)
+                })
+                req.on('response', (headers, flags) => {
+                    result.status = headers[":status"]
+                    result.headers = headers
+                })
+
+                req.write(body)
+                req.on('end', () => {
+                    result.body = respData.join("")
+                    resolve(result)
+                })
+                req.end()
+            } catch (e) {
+                log.error("K8sClient post request failed.", `Path=${path}, err=${e}`)
+                reject(e)
+            }
+        })
+    }
+
+    public async postObject(path: string, obj: Object): Promise<Result> {
+        let that = this;
+        return new Promise<Result>((resolve, reject) => {
+            let objBuf = Buffer.from(JSON.stringify(obj))
+            that.post(path, objBuf, "application/json")
+                .then((result) => {
+                    resolve(result)
+                })
+                .catch((reson) => {
+                    reject(reson)
+                })
+        })
+    }
+
     public heartBeat() {
         log.silly("Sending heartbeat.");
         let header: http2.OutgoingHttpHeaders = {
@@ -250,7 +301,7 @@ export class K8sClient {
         let that = this;
         this.token = fs.readFileSync(tokenFilePath, 'utf8');
         let ca = fs.readFileSync(caCertPath, 'utf8');
-        this.http2Client = http2.connect(apiServerUrl, {ca: ca}, (session, socket) => {
+        this.http2Client = http2.connect(apiServerUrl, { ca: ca }, (session, socket) => {
             socket.setKeepAlive(true, 0); //
             socket.on(
                 'close', (hadError) => {
