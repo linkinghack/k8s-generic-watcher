@@ -115,18 +115,24 @@ export class K8sApiObjectWatcher extends EventEmitter {
         this._startVersion = objectList.metadata.resourceVersion;
         this._cacheInformer.AddObjects(true, ...objectList.items)
 
-        // 3. watch changes started from 'resourceVersion'
+        // 3. watch changes starting from 'resourceVersion'
         this._h2Session = this._k8sClient.request(K8sApiObjectWatcher.applyHttpUrlParameters(this._resourceUrl,
             WatchRequestParams,
             new Map<string, string>([[K8sApiQueryParameterNames.resourceVersion, this._startVersion]])))
         this.readEvents();  // continuously read watch events
 
         this._started = true;
+        this._stopped = false;
     }
 
     public Stop() {
         this._stopped = true;
         this._h2Session.close();
+    }
+
+    public ReSync() {
+        this.Stop();
+        this.Start();
     }
 
     private async readEvents() {

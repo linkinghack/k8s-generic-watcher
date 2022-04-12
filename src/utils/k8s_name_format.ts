@@ -1,4 +1,4 @@
-import {ApiResourceCacheType} from "../k8s_resources/inner_types";
+import {ApiResourceCacheType, GVK} from "../k8s_resources/inner_types";
 import logger from "../logger";
 
 export enum DefaultK8sGroup {
@@ -72,6 +72,9 @@ export function CheckedGroupVersion(group: string, version: string) {
 
 export function CheckedGVK(group: string, version: string, kind: string): string {
     return `${CheckedGroupVersion(group, version)}/${kind}`;
+}
+export function CheckedGVKStrForGVKType(gvk: GVK): string {
+    return CheckedGVK(gvk.group, gvk.version, gvk.kind)
 }
 
 export function SplitGVK(gvk: string): { group: string, version: string, kind: string } {

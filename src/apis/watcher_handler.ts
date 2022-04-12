@@ -1,32 +1,31 @@
-import {inject, singleton} from "tsyringe";
-import {WatchersMap} from "../watcher/watchers_map";
+import { inject, singleton } from "tsyringe";
+import { WatchersMap } from "../watcher/watchers_map";
 import express from "express";
 import logger from "../logger";
-import {K8sObjectsQueryParams, WatcherApiResponse} from "../types";
+import { K8sObjectsQueryParams, GenericApiResponse } from "../types";
 import HttpStatus from "http-status";
-import {ApiGroupDetector} from "../k8s_resources/api_group_detector";
-import {K8sApiObject} from "../k8s_resources/k8s_origin_types";
-import {ArrayToMap, K8sApiObjectsIntersect} from "../utils/util"
-import {GVKNotFoundError} from "../error";
-import httpStatus from "http-status";
+import { ApiGroupDetector } from "../k8s_resources/api_group_detector";
+import { K8sApiObject } from "../k8s_resources/k8s_origin_types";
+import { ArrayToMap, K8sApiObjectsIntersect } from "../utils/util"
+import { GVKNotFoundError } from "../error";
 
-const log = logger.getChildLogger({name: "Handler"});
+const log = logger.getChildLogger({ name: "WatcherAPIHandler" });
 
 @singleton()
-export class Handler {
+export class WatcherAPIHandler {
     private _watcherMap: WatchersMap
     private _apiGroupDetector: ApiGroupDetector
 
     constructor(@inject(WatchersMap) watchersMap: WatchersMap,
-                @inject(ApiGroupDetector) apiGroupDetector: ApiGroupDetector) {
+        @inject(ApiGroupDetector) apiGroupDetector: ApiGroupDetector) {
         this._watcherMap = watchersMap;
         this._apiGroupDetector = apiGroupDetector;
     }
 
     private async query(group: string, version: string, kind: string, name?: string, namespace?: string, uid?: string,
-                        fieldMatches?: Map<string, any>, labelSelectors?: Map<string, string>, annotationMatches?: Map<string, string>): Promise<K8sApiObject[]> {
+        fieldMatches?: Map<string, any>, labelSelectors?: Map<string, string>, annotationMatches?: Map<string, string>): Promise<K8sApiObject[]> {
         let that = this;
-        let gvk = {group: group, version: version, kind: kind}
+        let gvk = { group: group, version: version, kind: kind }
         let watcher = that._watcherMap.GetWatcher(gvk);
         if (!watcher) {
             // GVK requested the first time. Check existence of GVK and create watcher.
@@ -67,7 +66,7 @@ export class Handler {
      *  If both 'name' and 'namespace' are specified or 'uid' is specified, label/annotation selectors and fieldMatches will be ignored.
      *  Preference to parameters in request body.
      * @param req
-     *   @QueryParameters:
+     *   @QueryParameters
      *      group: API group of the requesting resource.  Like 'core', 'apps', 'networking.k8s.io'
      *      version: API group version of the requesting resource.  Like 'v1', 'v1beta1'
      *      kind: Resource kind.  Like 'Pod', 'Deploy'
@@ -135,7 +134,7 @@ export class Handler {
 
         if (!group || !version || !kind) {
             resp.status(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
-            resp.json(WatcherApiResponse.Result(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE, 'illegal GVK in query parameters', {
+            resp.json(GenericApiResponse.Result(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE, 'illegal GVK in query parameters', {
                 group: group,
                 version: version,
                 kind: kind
@@ -144,55 +143,58 @@ export class Handler {
             return;
         }
 
-        try {
-            let results = await that.query(group, version, kind, name, namespace, uid, fieldMatches, labelSelectors, annotationSelectors)
-            resp.status(HttpStatus.OK)
-            resp.json(WatcherApiResponse.Ok(`${results?.length} resource(s) founded`, results))
-            resp.end();
-        } catch (e) {
-            if (e instanceof GVKNotFoundError) {
-                resp.status(HttpStatus.NOT_FOUND)
-                resp.json(WatcherApiResponse.Result(HttpStatus.NOT_FOUND, `GVK not found, possible GVKs in 'data' field. ErrorDetail=${JSON.stringify(e)}`, this._apiGroupDetector.SearchByKind(kind)))
+        that.query(group, version, kind, name, namespace, uid, fieldMatches, labelSelectors, annotationSelectors)
+            .then(results => {
+                resp.status(HttpStatus.OK)
+                resp.json(GenericApiResponse.Ok(`${results?.length} resource(s) founded`, results))
                 resp.end();
-            } else {
-                log.error(`query process error`, e)
-                resp.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                resp.json(WatcherApiResponse.Result(HttpStatus.INTERNAL_SERVER_ERROR, e.message, e))
-                resp.end()
-            }
-        }
+            })
+            .catch(e => {
+                if (e instanceof GVKNotFoundError) {
+                    resp.status(HttpStatus.NOT_FOUND)
+                    resp.json(GenericApiResponse.Result(HttpStatus.NOT_FOUND, `GVK not found, possible GVKs in 'data' field. ErrorDetail=${JSON.stringify(e)}`, this._apiGroupDetector.SearchByKind(kind)))
+                    resp.end();
+                } else {
+                    log.error(`query process error`, e)
+                    resp.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    resp.json(GenericApiResponse.Result(HttpStatus.INTERNAL_SERVER_ERROR, e.message, e))
+                    resp.end()
+                }
+            })
     }
 
     /**
      *  Get Api groups list in the cluster.
      * @param req
-     *   @QueryParam:
+     *   @QueryParam
      *     forceUpdate: 'true' or not set. Whether to force update the list in cache.
      * @param resp
      */
     public async GetApiGroups(req: express.Request, resp: express.Response) {
         let forceUpdateParam = req.query['forceUpdate'] as string;
-        try {
-            let forceUpdate = false;
-            if (forceUpdateParam == 'true') {
-                forceUpdate = true
-            }
-            let groups = await this._apiGroupDetector.GetApiGroups(forceUpdate);
-            resp.status(HttpStatus.OK);
-            resp.json(WatcherApiResponse.Ok('api groups', groups));
-            resp.end();
-        } catch (e) {
-            log.error(`Error get ApiGroups`, e)
-            resp.status(HttpStatus.INTERNAL_SERVER_ERROR);
-            resp.json(WatcherApiResponse.Result(HttpStatus.INTERNAL_SERVER_ERROR, 'error get api groups', e.message))
-            resp.end();
+        let forceUpdate = false;
+        if (forceUpdateParam == 'true') {
+            forceUpdate = true
         }
+
+        this._apiGroupDetector.GetApiGroups(forceUpdate)
+            .then(groups => {
+                resp.status(HttpStatus.OK);
+                resp.json(GenericApiResponse.Ok('api groups', groups));
+                resp.end();    
+            })
+            .catch(e => {
+                log.error(`Error get ApiGroups`, e)
+                resp.status(HttpStatus.INTERNAL_SERVER_ERROR);
+                resp.json(GenericApiResponse.Result(HttpStatus.INTERNAL_SERVER_ERROR, 'error get api groups', e.message))
+                resp.end();
+            })
     }
 
     /**
      * Get K8s resources list in a specified api group/version.
      * @param req
-     *   @QueryParam:
+     *   @QueryParam
      *     group: Api group name.
      *     version: Target version.
      * @param resp
@@ -201,31 +203,34 @@ export class Handler {
         let group = req.query['group'] as string;
         let version = req.query['version'] as string;
         let forceUpdateParam = req.query['forceUpdate'] as string;
-        try {
-            log.debug(`Requesting api group resources list`, `group=${group}, version=${version}, forceUpdate=${forceUpdateParam}`)
-            if (!group || !version) {
-                resp.status(HttpStatus.NOT_FOUND);
-                resp.json(WatcherApiResponse.Result(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE, 'group or version not specified', `group=${group}, version=${version}`))
-            }
-            let forceUpdate = false;
-            if (forceUpdateParam == 'true') {
-                forceUpdate = true;
-            }
-            let detail = await this._apiGroupDetector.GetApiGroupResources(group, version, forceUpdate);
-            resp.status(HttpStatus.OK);
-            resp.json(WatcherApiResponse.Ok('resource list', detail))
-            resp.end();
-        } catch (e) {
-            log.error('Get resources in GV error', `group=${group}, version=${version}`, e)
-            resp.status(HttpStatus.INTERNAL_SERVER_ERROR);
-            resp.json(WatcherApiResponse.Result(HttpStatus.INTERNAL_SERVER_ERROR, 'error get resources list', e.message));
-            resp.end();
+
+        log.debug(`Requesting api group resources list`, `group=${group}, version=${version}, forceUpdate=${forceUpdateParam}`)
+        if (!group || !version) {
+            resp.status(HttpStatus.NOT_FOUND);
+            resp.json(GenericApiResponse.Result(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE, 'group or version not specified', `group=${group}, version=${version}`))
         }
+        let forceUpdate = false;
+        if (forceUpdateParam == 'true') {
+            forceUpdate = true;
+        }
+
+        this._apiGroupDetector.GetApiGroupResources(group, version, forceUpdate)
+            .then(detail => {
+                resp.status(HttpStatus.OK);
+                resp.json(GenericApiResponse.Ok('resource list', detail))
+                resp.end();
+            })
+            .catch(e => {
+                log.error('Get resources in GV error', `group=${group}, version=${version}`, e)
+                resp.status(HttpStatus.INTERNAL_SERVER_ERROR);
+                resp.json(GenericApiResponse.Result(HttpStatus.INTERNAL_SERVER_ERROR, 'error get resources list', e.message));
+                resp.end();
+            })
     }
 
     public GetAllCachedResources(req: express.Request, resp: express.Response) {
         resp.status(HttpStatus.OK);
-        resp.json(WatcherApiResponse.Ok('resources', this._apiGroupDetector.AllCachedResource()));
+        resp.json(GenericApiResponse.Ok('resources', this._apiGroupDetector.AllCachedResource()));
         resp.end()
     }
 
@@ -237,7 +242,7 @@ export class Handler {
 
         log.debug("Get cache size", `Group=${group}, version=${version}, Kind=${kind}`)
         try {
-            let gvk = {group: group, version: version, kind: kind}
+            let gvk = { group: group, version: version, kind: kind }
             let watcher = that._watcherMap.GetWatcher(gvk);
             log.debug(`Watcher: ${watcher}`)
             let count = 0;
@@ -245,13 +250,13 @@ export class Handler {
                 count = watcher.CachedObjectsCount()
                 log.debug("Watcher cache size", count)
             }
-            resp.status(httpStatus.OK);
-            resp.json(WatcherApiResponse.Ok('cached objecs count', count))
-            resp.end() 
-        } catch(e) {
+            resp.status(HttpStatus.OK);
+            resp.json(GenericApiResponse.Ok('cached objecs count', count))
+            resp.end()
+        } catch (e) {
             log.error('Get cached size error', `group=${group}, version=${version}`, e)
             resp.status(HttpStatus.INTERNAL_SERVER_ERROR);
-            resp.json(WatcherApiResponse.Result(HttpStatus.INTERNAL_SERVER_ERROR, 'error get cached objects count', e.message));
+            resp.json(GenericApiResponse.Result(HttpStatus.INTERNAL_SERVER_ERROR, 'error get cached objects count', e.message));
             resp.end();
         }
     }

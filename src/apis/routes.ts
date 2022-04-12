@@ -1,14 +1,17 @@
 import express from "express";
 import path from "path";
 import {container} from "tsyringe";
-import {Handler} from "./handler";
+import { AnalyzerAPIHandler } from "./analyzer_handler";
+import {WatcherAPIHandler} from "./watcher_handler";
 
 let QueryRouter = express.Router();
 let ManageRouter = express.Router();
+let AnalyzerRouter = express.Router();
 let DashboardRouter = express.Router();
 let RootRouter = express.Router();
 
-let handler = container.resolve(Handler)
+let watcherHandler = container.resolve(WatcherAPIHandler)
+let analyzerHandler = container.resolve(AnalyzerAPIHandler)
 
 /**
  * Root router
@@ -16,6 +19,7 @@ let handler = container.resolve(Handler)
 RootRouter.use('/manage', ManageRouter)
 RootRouter.use('/resources', QueryRouter)
 RootRouter.use('/dashboard', DashboardRouter)
+RootRouter.use('/analyze', AnalyzerRouter)
 RootRouter.get('/', (req, resp) => {
     console.log(req.headers)
     console.log(req.query)
@@ -26,16 +30,21 @@ RootRouter.get('/', (req, resp) => {
 /**
  * Query router routes requests for querying K8s api objects
  */
-QueryRouter.get('/k8sObjects', handler.QueryResource.bind(handler))
-QueryRouter.post('/k8sObjects', handler.QueryResource.bind(handler))
-QueryRouter.get('/apiGroups', handler.GetApiGroups.bind(handler))
-QueryRouter.get('/apiGroupResources', handler.GetApiApiGroupResources.bind(handler))
-QueryRouter.get('/cachedResourcesList', handler.GetAllCachedResources.bind(handler))
+QueryRouter.get('/k8sObjects', watcherHandler.QueryResource.bind(watcherHandler))
+QueryRouter.post('/k8sObjects', watcherHandler.QueryResource.bind(watcherHandler))
+QueryRouter.get('/apiGroups', watcherHandler.GetApiGroups.bind(watcherHandler))
+QueryRouter.get('/apiGroupResources', watcherHandler.GetApiApiGroupResources.bind(watcherHandler))
+QueryRouter.get('/cachedResourcesList', watcherHandler.GetAllCachedResources.bind(watcherHandler))
+
+/**
+ * Analyzer router routes request for K8s objects relations analyzing results
+ */
+AnalyzerRouter.get('/istioGatewayHosts', analyzerHandler.GetGatewayHosts.bind(analyzerHandler))
 
 /**
  * Manager router routes requests for managing watchers
  */
-ManageRouter.get("/cacheSize", handler.GetCachedObjectsCount.bind(handler))
+ManageRouter.get("/cacheSize", watcherHandler.GetCachedObjectsCount.bind(watcherHandler))
 
 /**
  * Dashboard router routes request for GUI dashboard.

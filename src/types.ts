@@ -11,7 +11,7 @@ export const
     AuthTypeClientCertificate = "ClientCertificate",
     AuthTypeKubeConfig = "KubeConfig"
 
-export class WatcherApiResponse {
+export class GenericApiResponse {
     public code: number;
     public message: string;
     public data: any;
@@ -23,11 +23,11 @@ export class WatcherApiResponse {
     }
 
     public static Result(code: number, msg?: string, data?: any) {
-        return new WatcherApiResponse(code, msg, data);
+        return new GenericApiResponse(code, msg, data);
     }
 
-    public static Ok(msg?: string, data?: any): WatcherApiResponse {
-        return new WatcherApiResponse(HttpStatus.OK, msg, data)
+    public static Ok(msg?: string, data?: any): GenericApiResponse {
+        return new GenericApiResponse(HttpStatus.OK, msg, data)
     }
 }
 

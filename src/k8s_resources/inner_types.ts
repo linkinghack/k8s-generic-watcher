@@ -11,7 +11,7 @@ export interface GVK {
     kind: string;
 }
 
-export interface InitialWatchResource extends GVK {
+export interface InitialWatchingResource extends GVK {
     watchOptions?: WatcherOptions,
     notifiers?: [{
         webhookUrls: string[],

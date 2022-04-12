@@ -1,5 +1,5 @@
 import * as fs from "fs";
-import {GVK, InitialWatchResource} from "./k8s_resources/inner_types";
+import {GVK, InitialWatchingResource} from "./k8s_resources/inner_types";
 import {homedir} from "os";
 import {K8sClientOptions} from "./utils/k8s_client";
 
@@ -9,7 +9,7 @@ export class GlobalConfig {
     listenPort: number = 3000; // Watcher API server listen address
 
     // Watcher configs
-    initialWatchingResources: Array<InitialWatchResource> = [{
+    initialWatchingResources: Array<InitialWatchingResource> = [{
         group: "core",
         version: "v1",
         kind: "Pod",
