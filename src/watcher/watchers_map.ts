@@ -31,4 +31,10 @@ export class WatchersMap {
     public GetWatcher(gvk: GVK): K8sApiObjectWatcher {
         return this._watchers.get(CheckedGVK(gvk.group, gvk.version, gvk.kind));
     }
+
+    public GetWatchersGVKList(): string[] {
+        let gvks = []
+        this._watchers.forEach( (v, k) => gvks.push(k))
+        return gvks
+    }
 }

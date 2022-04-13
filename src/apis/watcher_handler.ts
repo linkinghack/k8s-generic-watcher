@@ -228,17 +228,37 @@ export class WatcherAPIHandler {
             })
     }
 
+    /**
+     * Get cached resource GVKs
+     * @param req 
+     *   No params
+     * @param resp 
+     */
     public GetAllCachedResources(req: express.Request, resp: express.Response) {
         resp.status(HttpStatus.OK);
-        resp.json(GenericApiResponse.Ok('resources', this._apiGroupDetector.AllCachedResource()));
+        resp.json(GenericApiResponse.Ok('resources', this._watcherMap.GetWatchersGVKList()));
         resp.end()
     }
 
+    /**
+     * Get cached objects counts of specified GVK
+     * @param req 
+     *   @QueryParam
+     *      group: target API group
+     *      version: API version
+     *      kind: API Object kind
+     * @param resp 
+     */
     public GetCachedObjectsCount(req: express.Request, resp: express.Response) {
         let that = this;
         let group: string = req.query['group'] as string;
         let version: string = req.query['version'] as string;
         let kind: string = req.query['kind'] as string;
+
+        if(!group || !version || !kind) {
+            resp.status(HttpStatus.BAD_REQUEST);
+            resp.json(GenericApiResponse.Result(HttpStatus.BAD_REQUEST, 'missing required parameters', "group;version;kind"))
+        }
 
         log.debug("Get cache size", `Group=${group}, version=${version}, Kind=${kind}`)
         try {

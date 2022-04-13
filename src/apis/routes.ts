@@ -34,7 +34,6 @@ QueryRouter.get('/k8sObjects', watcherHandler.QueryResource.bind(watcherHandler)
 QueryRouter.post('/k8sObjects', watcherHandler.QueryResource.bind(watcherHandler))
 QueryRouter.get('/apiGroups', watcherHandler.GetApiGroups.bind(watcherHandler))
 QueryRouter.get('/apiGroupResources', watcherHandler.GetApiApiGroupResources.bind(watcherHandler))
-QueryRouter.get('/cachedResourcesList', watcherHandler.GetAllCachedResources.bind(watcherHandler))
 
 /**
  * Analyzer router routes request for K8s objects relations analyzing results
@@ -45,6 +44,7 @@ AnalyzerRouter.get('/istioGatewayHosts', analyzerHandler.GetGatewayHosts.bind(an
  * Manager router routes requests for managing watchers
  */
 ManageRouter.get("/cacheSize", watcherHandler.GetCachedObjectsCount.bind(watcherHandler))
+ManageRouter.get('/cachedResourcesList', watcherHandler.GetAllCachedResources.bind(watcherHandler))
 
 /**
  * Dashboard router routes request for GUI dashboard.
