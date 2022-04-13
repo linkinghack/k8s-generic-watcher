@@ -11,7 +11,7 @@ K8s API 对象 watch 监控服务，支持K8s原生资源和任意指定的GVK�
 
 > 为方便描述, 以下简称此工具为GRW
 ## 概述
-GRW (Generic Resources Watcher) 通过利用Kubernetes REST API中 `GET` 方法的 `?watch` 特性，在本地建立指定API对象的状态缓存，在不对APIServer造成大压力的前提下为其他平台应用或对K8s API对象感兴趣的应用提供**资源对象列表查询**、**对象状态变更主动通知**、**动态设置关注API对象类型**等功能。
+GRW (Generic Resources Watcher) 通过利用Kubernetes REST API中 `GET` 方法的 `?watch` 特性，在本地建立指定API对象的状态缓存，在不对APIServer造成大压力的前提下为其他平台应用或对K8s API对象感兴趣的应用提供**资源对象列表查询**、**对象状态变更主动通知**、**动态设置关注API对象类型**、**常见对象层级关系分析**等功能。
 
 GRW应该作为每个需要关注具体资源变化的服务的附属组件（sidecar）部署，仅关注某个或者少数固定的几种API资源。关注不同资源状态的各个服务都应该独立部署GRW实例。
 
@@ -29,13 +29,19 @@ GRW的目标是通用API资源对象的状态监控、支撑高频率的资源�
 - HTTP接口查询
   - 资源对象缓存检索
   - core/v1, apps/v1 关键对象关系分析, Service-EndPoint, Deployment-RS-Pod 等（TODO）
-- WebHook订阅 （TODO）
+- WebHook订阅 (implemented, TODO: add docs)
 - 消息系统订阅（Kafka） （TODO)
+- 基本对象关系分析
+  - Istio VirtualService 对象列表获取
 
 详细参考：[功能特性文档](./docs/features.md)
 
 ### API 参考
 详见：[API Spec](./docs/api_spec.md)
+
+### TODOs
+- 支持Group + Kind 为条件进行对象列表查询，兼容部分API资源的多版本
+- 支持API 资源对象查询条件的模糊查询
 
 ---
 ## 开始使用

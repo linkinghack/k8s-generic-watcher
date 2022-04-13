@@ -27,7 +27,7 @@ TODO: 支持CRD监控，实时反馈已安装的CRD类型列表; CRD列表发生
 ## 2. 订阅通知模式
 通过配置指定对象类型的主动通知webhook，可以使GRW在watch某种资源过程中收到资源状态变更后主动通知
 
-### 2.1 变更通知条件和方
+### 2.1 变更通知条件和方式
 对应于主动查询模式中的精确查询条件，与主动查询功能复用此GVK缓存，添加webhook URL，watch到状态变更更新缓存同时发送到订阅URL。
 
 通知消息示例：
@@ -57,10 +57,13 @@ TODO: 支持CRD监控，实时反馈已安装的CRD类型列表; CRD列表发生
 
 **TODO:** GRW 查询API中支持一个参数指定是否创建独立watch会话和缓存，后续的相同条件查询都直接访问独立缓存，不进行GRW内部检索流程。
 
-### 3. core/v1, apps/v1 关键资源对象关系分析
+### 3. core/v1, apps/v1 以第三方基础设施（Istio, Knative etc.) 关键资源对象关系分析
 
 #### 3.1 Deployment --> ReplicaSet --> Pods 所属关系
 
 #### 3.2 PVC --> PV 对应关系
 
 #### 3.3 Service --->  EndPoints
+
+#### 3.4 Istio VirtualService & Gateway 已注册hosts
+支持获取集群中已注册的Istio Gateway上hosts记录，并与具体生效的VirtualService关联，给出VirtualService名称及其labels。 参考 [API 文档](./api_spec.md#1-获取所有istio-gateway上注册的hosts列表)
