@@ -54,6 +54,12 @@ export class CacheInformer extends EventEmitter {
         this._fieldIndices = new Map<string, ReadonlyMap<string, ReadonlySet<K8sObjectCacheType>>>();
     }
 
+    public Clear() {
+        for (let obj of this._idxUid.values()) {
+            this._store.delete(obj)
+        }
+    }
+
     /**
      * Search objects from local cache with optional search criteria.
      *   All the search criteria are optional. If none of them if specified, it means List all the object of current GVK in all namespaces.

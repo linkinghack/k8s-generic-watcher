@@ -100,6 +100,7 @@ export class K8sApiObjectWatcher extends EventEmitter {
      *  Error should be cached by caller.
      */
     public async Start() {
+        let that = this;
         // 0. get APIResource metadata verify existence of this APIResource, check resource type whether it is namespaced
         //   If GVK not found, throws the internal error
         this._resourceDetail = await this._apiGroupDetector.GetApiResourceDetailOfGVK(this._gvk.group, this._gvk.version, this._gvk.kind)
@@ -125,10 +126,20 @@ export class K8sApiObjectWatcher extends EventEmitter {
             this._h2Session = await this._k8sClient.requestWithHttp2Client(K8sApiObjectWatcher.applyHttpUrlParameters(this._resourceUrl,
                 WatchRequestParams,
                 new Map<string, string>([[K8sApiQueryParameterNames.resourceVersion, this._startVersion]])))
+            this._h2Session.on('close', ()=> {
+                if (!that._stopped) {
+                    that.ReSync()
+                }
+            })
         } else {
             this._h1Response = await this._k8sClient.requestWithHttp1Client(K8sApiObjectWatcher.applyHttpUrlParameters(this._resourceUrl,
                 WatchRequestParams,
                 new Map<string, string>([[K8sApiQueryParameterNames.resourceVersion, this._startVersion]])), 'GET')
+            this._h1Response.body.on('close', () => {
+                if (!that._stopped) {
+                    that.ReSync()
+                }
+            })
         }
 
         this.readEvents();  // continuously read watch events
@@ -143,6 +154,7 @@ export class K8sApiObjectWatcher extends EventEmitter {
     }
 
     public ReSync() {
+        this._cacheInformer.Clear()
         this.Stop();
         this.Start();
     }
