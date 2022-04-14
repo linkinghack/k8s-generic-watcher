@@ -97,7 +97,7 @@ export class K8sClient {
     constructor(@inject(K8sClientOptions) options: K8sClientOptions) {
         this._options = options;
 
-        if (this._options.authType == AuthTypeKubeConfig) {
+        if (!this._options.autoInClusterConfig && this._options.authType == AuthTypeKubeConfig) {
             let kubeconfig = this.parseKubeConfig()
             this._apiServerUrl = kubeconfig.apiServerUrl
             this._options.caCertDataPemBase64 = kubeconfig.caCertDataBase64
