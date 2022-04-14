@@ -46,7 +46,7 @@ export class ApiGroupDetector {
     private _preIndexingGVs: Array<{ group: string, version: string }>;
 
     constructor(@inject("preIndexingGVs") preIndexingGVs?: Array<{ group: string, version: string }>,
-                @inject(K8sClient) client?: K8sClient) {
+                      @inject(K8sClient) client?: K8sClient) {
         this._k8sClient = client;
 
         this._groupVersionsSet = new Set<string>();
@@ -140,7 +140,7 @@ export class ApiGroupDetector {
             log.info(`Updating cached ApiGroupResources for ${group}/${version}`)
 
             // fetch and cache apiGroup Resources
-            let result = await this._k8sClient.requestOnce(ApiGroupVersionToUrl(group, version))
+            let result = await this._k8sClient.requestOnce(ApiGroupVersionToUrl(group, version), 'GET')
             let parsedObj = JSON.parse(result.body);
 
             if (result.status == status.OK && IsApiResourceList(parsedObj)) {
@@ -223,7 +223,7 @@ export class ApiGroupDetector {
     public async GetApiGroups(sync: boolean = false): Promise<APIGroupList> {
         let that = this;
         if (sync || this._cachedApiGroups?.groups?.length < 2) {
-            let result = await this._k8sClient.requestOnce(DefaultUrlPath.ApiGroups)
+            let result = await this._k8sClient.requestOnce(DefaultUrlPath.ApiGroups, 'GET')
             let parsedObj = JSON.parse(result.body)
             if (result.status == status.OK && IsApiGroupList(parsedObj)) {
                 let agl = parsedObj as APIGroupList

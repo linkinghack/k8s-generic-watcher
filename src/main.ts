@@ -3,6 +3,7 @@ import {GetConfig, LoadConfig} from "./configs";
 import {container} from "tsyringe";
 import {K8sClientOptions} from "./utils/k8s_client";
 
+
 // 1. Load config file
 LoadConfig();
 

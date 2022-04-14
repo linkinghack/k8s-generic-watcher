@@ -24,9 +24,9 @@ export function createTestK8sClient() {
     return new K8sClient(options);
 }
 
-export function testK8sClientCreation() {
+export async function testK8sClientCreation() {
     let client = createTestK8sClient();
-    let stream = client.request("/api/v1/namespaces/default/pods", {});
+    let stream = await client.requestWithHttp2Client("/api/v1/namespaces/default/pods", {});
 
     stream.on("response", (headers: http2.IncomingHttpHeaders, flags: number) => {
         console.log(headers);
@@ -45,9 +45,9 @@ export function testK8sClientCreation() {
     })
 }
 
-export function testK8sResources() {
+export async function testK8sResources() {
     let client = createTestK8sClient();
-    let stream = client.request('/apis')
+    let stream = await client.requestWithHttp2Client('/apis')
     let respBuf = String();
     stream.on('data', (chunk) => {
         respBuf += chunk

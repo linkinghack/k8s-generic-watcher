@@ -118,7 +118,7 @@ body:
 ```
 
 ## 三、watcher状态检查
-### 1. 获取watcher当前已缓存的resource列表
+### 1.获取watcher当前已缓存的resource列表
 > /manage/cachedResourcesList
 #### 请求参数
 无
@@ -136,7 +136,7 @@ body:
 }
 ```
 
-### 2. 获取指定GVK在watcher中缓存的对象数量
+### 2.获取指定GVK在watcher中缓存的对象数量
 > GET /manage/cacheSize
 
 #### QueryString 请求参数

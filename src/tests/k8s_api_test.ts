@@ -63,7 +63,6 @@ async function testK8sAPI() {
         resp.body.resume();
     });
 
-
     resp.body.eventNames().forEach(event => {
         console.log("body event: ", event);
     })

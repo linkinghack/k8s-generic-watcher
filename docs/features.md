@@ -51,13 +51,12 @@ TODO: 支持CRD监控，实时反馈已安装的CRD类型列表; CRD列表发生
 }
 ```
 
-
 #### 2.3 labels selector检索结果范围变更通知
 独立缓存结果，独立HTTP2会话进行单独watch。
 
 **TODO:** GRW 查询API中支持一个参数指定是否创建独立watch会话和缓存，后续的相同条件查询都直接访问独立缓存，不进行GRW内部检索流程。
 
-### 3. core/v1, apps/v1 以第三方基础设施（Istio, Knative etc.) 关键资源对象关系分析
+### 3. core/v1, apps/v1 以及其他第三方软件（Istio, Knative etc.) 关键资源对象关系分析
 
 #### 3.1 Deployment --> ReplicaSet --> Pods 所属关系
 

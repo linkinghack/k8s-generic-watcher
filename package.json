@@ -17,6 +17,7 @@
   "author": "LIU Lei",
   "license": "ISC",
   "dependencies": {
+    "@types/node-fetch": "^2.6.1",
     "base64-arraybuffer": "^1.0.1",
     "body-parse": "^0.1.0",
     "cors": "^2.8.5",
@@ -28,6 +29,7 @@
     "multi-index": "^0.0.2",
     "node-fetch": "^2.6.7",
     "reflect-metadata": "^0.1.13",
+    "resolve-alpn": "^1.2.1",
     "tslog": "^3.3.1",
     "tsyringe": "^4.6.0",
     "yaml": "^1.10.2"
@@ -35,7 +37,6 @@
   "devDependencies": {
     "@types/express": "^4.17.13",
     "@types/node": "^17.0.5",
-    "@types/node-fetch": "^3.0.3",
     "typescript": "^4.6.0-dev.20220211"
   }
 }

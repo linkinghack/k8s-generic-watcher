@@ -15,6 +15,8 @@ import HttpStatus from "http-status";
 import logger from "../logger";
 import * as http2 from "http2";
 import {WatcherEventNotifier} from "../notifier/notifier_iface";
+import {constants} from "http2";
+import {Response} from "node-fetch";
 
 const log = logger.getChildLogger({name: "K8sApiObjectWatcher"});
 
@@ -46,7 +48,10 @@ export class K8sApiObjectWatcher extends EventEmitter {
     private _options: WatcherOptions;
     private readonly _gvk: GVK;
     private readonly _httpParams: Map<string, string>;
+
     private _h2Session: http2.ClientHttp2Stream;
+    private _h1Response: Response;
+
     private _k8sClient: K8sClient;
     private _apiGroupDetector: ApiGroupDetector;
     private _cacheInformer: CacheInformer;
@@ -104,7 +109,7 @@ export class K8sApiObjectWatcher extends EventEmitter {
         this._resourceUrl = K8sApiObjectWatcher.applyHttpUrlParameters(GVRUrl(this._resourceDetail, this._options?.namespace), this._httpParams)
 
         // 2. list and get resourceVersion
-        let listResult = await this._k8sClient.requestOnce(this._resourceUrl,)
+        let listResult = await this._k8sClient.requestOnce(this._resourceUrl, constants.HTTP2_METHOD_GET)
         if (listResult.status != HttpStatus.OK) {
             log.error(`List target Objects failed`, `currentGVK=${this._gvk}`, `h2Status=${listResult.status}`, `h2Headers=${listResult.headers}`);
             log.debug(`H2 error response body: ${listResult.body}`);
@@ -116,9 +121,16 @@ export class K8sApiObjectWatcher extends EventEmitter {
         this._cacheInformer.AddObjects(true, ...objectList.items)
 
         // 3. watch changes starting from 'resourceVersion'
-        this._h2Session = this._k8sClient.request(K8sApiObjectWatcher.applyHttpUrlParameters(this._resourceUrl,
-            WatchRequestParams,
-            new Map<string, string>([[K8sApiQueryParameterNames.resourceVersion, this._startVersion]])))
+        if (this._k8sClient.Http2Enabled()) {
+            this._h2Session = await this._k8sClient.requestWithHttp2Client(K8sApiObjectWatcher.applyHttpUrlParameters(this._resourceUrl,
+                WatchRequestParams,
+                new Map<string, string>([[K8sApiQueryParameterNames.resourceVersion, this._startVersion]])))
+        } else {
+            this._h1Response = await this._k8sClient.requestWithHttp1Client(K8sApiObjectWatcher.applyHttpUrlParameters(this._resourceUrl,
+                WatchRequestParams,
+                new Map<string, string>([[K8sApiQueryParameterNames.resourceVersion, this._startVersion]])), 'GET')
+        }
+
         this.readEvents();  // continuously read watch events
 
         this._started = true;
@@ -138,30 +150,60 @@ export class K8sApiObjectWatcher extends EventEmitter {
     private async readEvents() {
         let that = this;
         that._watcherStringBuf = String("");
-        this._h2Session.on('response', (headers, flags) => {
-            log.debug("Watch response received.", `headers=${JSON.stringify(headers)}`, `flags=${flags}`);
-        })
-        this._h2Session.on('data', (chunk) => {
-            log.debug("Watcher http2 stream message received", `watcher: gvk=${that._gvk.group}/${that._gvk.version}/${that._gvk.kind}`)
-            let chunkStr = chunk.toString();
-            for (; chunkStr.length > 0;) {
-                let endPos = chunkStr.indexOf("\n", 0);
-                if (endPos < 0) {
-                    that._watcherStringBuf += chunkStr;
-                    chunkStr = ""; // end this loop
-                } else {
-                    that._watcherStringBuf += chunkStr.substring(0, endPos + 1);
-                    try {
-                        that.analyzeEventObject(that._watcherStringBuf.toString());
-                    } catch (e) {
-                        // TODO: whether re-list resources?
-                        log.error("parse event object error", e)
+
+        if (this._k8sClient.Http2Enabled()) {
+            this._h2Session.on('response', (headers, flags) => {
+                log.debug("Watch response received.", `headers=${JSON.stringify(headers)}`, `flags=${flags}`);
+            })
+            this._h2Session.on('data', (chunk) => {
+                log.debug("Watcher http2 stream message received", `watcher: gvk=${that._gvk.group}/${that._gvk.version}/${that._gvk.kind}`)
+                let chunkStr = chunk.toString();
+                for (; chunkStr.length > 0;) {
+                    let endPos = chunkStr.indexOf("\n", 0);
+                    if (endPos < 0) {
+                        that._watcherStringBuf += chunkStr;
+                        chunkStr = ""; // end this loop
+                    } else {
+                        that._watcherStringBuf += chunkStr.substring(0, endPos + 1);
+                        try {
+                            that.analyzeEventObject(that._watcherStringBuf.toString());
+                        } catch (e) {
+                            // TODO: whether re-list resources?
+                            log.error("parse event object error", e)
+                        }
+                        that._watcherStringBuf = "";
+                        chunkStr = chunkStr.substring(endPos + 1);
                     }
-                    that._watcherStringBuf = "";
-                    chunkStr = chunkStr.substring(endPos + 1);
                 }
-            }
-        })
+            })
+        } else {
+            this._h1Response.body.on("readable", () => {
+                log.silly("http1 client watching message received")
+                that._h1Response.body.pause();
+
+                let chunk = that._h1Response.body.read();
+                let str = String(chunk);
+                for (; that._watcherStringBuf.length > 0;) {
+                    let endPos = that._watcherStringBuf.indexOf("\n", 0);
+                    if (endPos < 0) {
+                        that._watcherStringBuf += str;
+                        str = ""; // end this loop
+                    } else {
+                        that._watcherStringBuf  += str.substring(0, endPos + 1);
+                        try {
+                            that.analyzeEventObject(that._watcherStringBuf.toString());
+                        } catch (e) {
+                            log.error("parse event object error", e)
+                        }
+                        that._watcherStringBuf  = "";
+                        str = str.substring(endPos + 1);
+                    }
+                }
+
+                that._h1Response.body.resume();
+            });
+        }
+
         log.info("Watch response listener added.", `GVK=${JSON.stringify(this._gvk)}`, `url=${this._resourceUrl}`)
     }
 
