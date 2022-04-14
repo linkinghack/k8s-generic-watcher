@@ -128,12 +128,12 @@ export class K8sClient {
             ALPNProtocols: ['h2', 'http/1.1'],
             servername: u.hostname,
         }
-        if (this._options.caCertDataPemBase64) {
-            tlsOptions.ca = Buffer.from(Base64.decode(this._options.caCertDataPemBase64)).toString('utf8')
+        if (this._options.autoInClusterConfig) {
+            tlsOptions.ca = readFileSync('/var/run/secrets/kubernetes.io/serviceaccount/ca.crt')
         } else if (this._options.caCertPath) {
             tlsOptions.ca = readFileSync(this._options.caCertPath)
         } else {
-            tlsOptions.ca = readFileSync('/var/run/secrets/kubernetes.io/serviceaccount/ca.crt')
+            tlsOptions.ca = Buffer.from(Base64.decode(this._options.caCertDataPemBase64)).toString('utf8')
         }
         log.info(`TLS options for ALPN: `, tlsOptions)
         let alpnResult = await resolveAlpn(tlsOptions) as { alpnProtocol: string, timeout: boolean }
@@ -268,7 +268,7 @@ export class K8sClient {
                 }
             })
         } else {
-            log.debug(`Http agent options:`, this.httpsAgentOptions)
+            // log.debug(`Http agent options:`, this.httpsAgentOptions)
             // request with http1 client
             let response = await this.requestWithHttp1Client(path, method)
             return this.fetchResponseToResult(response)
