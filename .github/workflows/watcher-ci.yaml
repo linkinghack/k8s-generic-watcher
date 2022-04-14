@@ -21,15 +21,21 @@ jobs:
       - name: set-image-tag
         id: tag
         run: echo "::set-output name=image_tag::$(git rev-parse --short HEAD)"
-      - name: build-image
-        run: docker buildx build --platform linux/amd64,linux/arm64,linux/ppc64le,linux/s390x,linux/arm/v7 -t linkinghack/k8s-generic-watcher:${{ steps.tag.outputs.image_tag }} . --push
-      - name: 'update latest tag'
-        run: docker tag linkinghack/k8s-generic-watcher:${{ steps.tag.outputs.image_tag }} linkinghack/k8s-generic-watcher
-      - name: push-image
+      - name: login
         env:
           DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
           DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
         run: |
           docker login -u $DOCKERHUB_USER -p $DOCKERHUB_PASSWORD
-          docker push linkinghack/k8s-generic-watcher:${{ steps.tag.outputs.image_tag }}
-          docker push linkinghack/k8s-generic-watcher
+      - name: build-push-image
+        run: docker buildx build --platform linux/amd64,linux/arm64,linux/ppc64le,linux/s390x,linux/arm/v7 -t linkinghack/k8s-generic-watcher:${{ steps.tag.outputs.image_tag }} . --push
+#      - name: 'update latest tag'
+#        run: docker tag linkinghack/k8s-generic-watcher:${{ steps.tag.outputs.image_tag }} linkinghack/k8s-generic-watcher
+#      - name: push-image
+#        env:
+#          DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
+#          DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+#        run: |
+#          docker login -u $DOCKERHUB_USER -p $DOCKERHUB_PASSWORD
+#          docker push linkinghack/k8s-generic-watcher:${{ steps.tag.outputs.image_tag }}
+#          docker push linkinghack/k8s-generic-watcher
