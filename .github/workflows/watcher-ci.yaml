@@ -13,11 +13,18 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v2
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
       - name: set-image-tag
         id: tag
         run: echo "::set-output name=image_tag::$(git rev-parse --short HEAD)"
       - name: build-image
-        run: docker build -t linkinghack/k8s-generic-watcher:${{ steps.tag.outputs.image_tag }} .
+        run: docker buildx build --platform linux/amd64,linux/arm64,linux/ppc64le,linux/s390x,linux/arm/v7 -t linkinghack/k8s-generic-watcher:${{ steps.tag.outputs.image_tag }} . --push
+      - name: 'update latest tag'
+        run: docker tag linkinghack/k8s-generic-watcher:${{ steps.tag.outputs.image_tag }} linkinghack/k8s-generic-watcher
       - name: push-image
         env:
           DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
@@ -25,3 +32,4 @@ jobs:
         run: |
           docker login -u $DOCKERHUB_USER -p $DOCKERHUB_PASSWORD
           docker push linkinghack/k8s-generic-watcher:${{ steps.tag.outputs.image_tag }}
+          docker push linkinghack/k8s-generic-watcher
