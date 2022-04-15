@@ -75,11 +75,13 @@ export class IstioVirtualServiceAnalyzer {
         try {
             if (!gwWatcher) {
                 await this._watcherMap.AddWatcher(IstioGatewayGVK)
+                log.info(`Istio Gateway watcher added`)
                 gwWatcher = this._watcherMap.GetWatcher(IstioGatewayGVK)
             }
 
             if (!vsWatcher) {
                 await this._watcherMap.AddWatcher(IstioVSGVK)
+                log.info(`Istio VirtualService watcher added`)
                 vsWatcher = this._watcherMap.GetWatcher(IstioVSGVK)
             }
         } catch(e) {

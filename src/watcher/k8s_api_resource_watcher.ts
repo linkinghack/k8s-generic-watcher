@@ -10,8 +10,9 @@ import {EventEmitter} from "stream";
 import {ApiGroupDetector} from "../k8s_resources/api_group_detector";
 import {CacheInformer, InformerEvent} from "../cache/cache_informer";
 import {inject, injectable} from "tsyringe";
-import {GVRUrl} from "../utils/k8s_name_format";
+import {CheckedGVKStrForGVKType, GVRUrl} from "../utils/k8s_name_format";
 import HttpStatus from "http-status";
+import byline = require('byline');
 import logger from "../logger";
 import * as http2 from "http2";
 import {WatcherEventNotifier} from "../notifier/notifier_iface";
@@ -132,14 +133,24 @@ export class K8sApiObjectWatcher extends EventEmitter {
                 }
             })
         } else {
+            log.info(`Watcher Start(): creating http1 connection with ApiServer for : ${CheckedGVKStrForGVKType(this._gvk)}`)
             this._h1Response = await this._k8sClient.requestWithHttp1Client(K8sApiObjectWatcher.applyHttpUrlParameters(this._resourceUrl,
                 WatchRequestParams,
                 new Map<string, string>([[K8sApiQueryParameterNames.resourceVersion, this._startVersion]])), 'GET')
-            this._h1Response.body.on('close', () => {
+
+            log.debug(`Watcher Start()  ${CheckedGVKStrForGVKType(this._gvk)}: response: ${this._h1Response.status}`)
+            if (!this._h1Response.ok) {
+                throw new Error(`Http1 watch response status not OK. ${this._h1Response.status}`)
+            }
+
+            let restartFunc = (err) => {
+                log.info(`Watcher HTTP1 connection closed: ${CheckedGVKStrForGVKType(that._gvk)}`, err)
                 if (!that._stopped) {
                     that.ReSync()
                 }
-            })
+            }
+            this._h1Response.body.on('close', restartFunc)
+            this._h1Response.body.on('error', restartFunc)
         }
 
         this.readEvents();  // continuously read watch events
@@ -154,9 +165,12 @@ export class K8sApiObjectWatcher extends EventEmitter {
     }
 
     public ReSync() {
+        log.info(`Watcher re-syncing: ${CheckedGVKStrForGVKType(this._gvk)}, watcher Http2: ${this._k8sClient.Http2Enabled()}`)
         this._cacheInformer.Clear()
         this.Stop();
-        this.Start();
+        this.Start().then(() => {
+            this.readEvents();
+        });
     }
 
     private async readEvents() {
@@ -167,6 +181,7 @@ export class K8sApiObjectWatcher extends EventEmitter {
             this._h2Session.on('response', (headers, flags) => {
                 log.debug("Watch response received.", `headers=${JSON.stringify(headers)}`, `flags=${flags}`);
             })
+
             this._h2Session.on('data', (chunk) => {
                 log.debug("Watcher http2 stream message received", `watcher: gvk=${that._gvk.group}/${that._gvk.version}/${that._gvk.kind}`)
                 let chunkStr = chunk.toString();
@@ -189,31 +204,20 @@ export class K8sApiObjectWatcher extends EventEmitter {
                 }
             })
         } else {
-            this._h1Response.body.on("readable", () => {
-                log.silly("http1 client watching message received")
-                that._h1Response.body.pause();
+            log.info(`readEvents(): http1 response readable listener: ${this._h1Response.body.listenerCount("readable")}`)
+            let eventsSteram = byline.createStream()
+            eventsSteram.on('data', (line) => {
 
-                let chunk = that._h1Response.body.read();
-                let str = String(chunk);
-                for (; that._watcherStringBuf.length > 0;) {
-                    let endPos = that._watcherStringBuf.indexOf("\n", 0);
-                    if (endPos < 0) {
-                        that._watcherStringBuf += str;
-                        str = ""; // end this loop
-                    } else {
-                        that._watcherStringBuf  += str.substring(0, endPos + 1);
-                        try {
-                            that.analyzeEventObject(that._watcherStringBuf.toString());
-                        } catch (e) {
-                            log.error("parse event object error", e)
-                        }
-                        that._watcherStringBuf  = "";
-                        str = str.substring(endPos + 1);
-                    }
+                try {
+                    that.analyzeEventObject(line);
+                } catch (ignore) {
+                    // ignore parse errors
                 }
-
-                that._h1Response.body.resume();
             });
+            eventsSteram.on('close', () => {
+                log.info(`EventStream for ${CheckedGVKStrForGVKType(that._gvk)} with HTTP1 client closed`)
+            })
+            this._h1Response.body.pipe(eventsSteram)
         }
 
         log.info("Watch response listener added.", `GVK=${JSON.stringify(this._gvk)}`, `url=${this._resourceUrl}`)

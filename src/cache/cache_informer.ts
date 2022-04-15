@@ -55,9 +55,11 @@ export class CacheInformer extends EventEmitter {
     }
 
     public Clear() {
+        log.info(`Informer for ${this._checkedGvk}: clearing store`)
         for (let obj of this._idxUid.values()) {
             this._store.delete(obj)
         }
+        log.info(`Informer for ${this._checkedGvk}: cached cleared`)
     }
 
     /**
