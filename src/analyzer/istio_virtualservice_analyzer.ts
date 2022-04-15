@@ -94,16 +94,17 @@ export class IstioVirtualServiceAnalyzer {
         let vss = vsWatcher.Query(null, null, namespace, null) as VirtualService[]
 
         let result: Array<GatewayHosts> = []
-        let tmpGw: {[index: string]: {hosts: string[], gwHosts: GatewayHosts}} = {} // namespace/name of Gateway --> Gatway Object and temporary hosts list
+        let tmpGw: {[index: string]: {hosts: { hostname: string, reg: RegExp }[], gwHosts: GatewayHosts}} = {} // namespace/name of Gateway --> Gatway Object and temporary hosts list
         
         // Cache gateway names
         gateways.forEach((gw) => {
             log.debug(`gateway: name=${gw.metadata.name}`)
-            let hosts: string[] = []
+            let hosts: { hostname: string, reg: RegExp }[] = []
             gw.spec.servers.forEach((s) => {
                 log.debug(`Server: name=${s.name}, port=${s.port.number}, hosts=${s.hosts}`)
                 s.hosts.forEach((hostStr) => {
-                    hosts.push(hostStr)
+                    let exp = hostStr.replaceAll('.', '\\.').replaceAll('*', '.*')
+                    hosts.push({hostname: hostStr, reg: new RegExp(exp)})
                 })
             })
             tmpGw[`${gw.metadata.namespace}/${gw.metadata.name}`] = {hosts: hosts, gwHosts: {namespace: gw.metadata.namespace, gatewayName: gw.metadata.name, serviceHosts: []} as GatewayHosts}
@@ -114,8 +115,16 @@ export class IstioVirtualServiceAnalyzer {
             vs.spec.hosts.forEach(host => {
                 vs.spec.gateways.forEach(gwName => {
                     let availibleHosts = tmpGw[`${vs.metadata.namespace}/${gwName}`]?.hosts
-                    if (availibleHosts?.filter(existingHost => {if (host == existingHost || existingHost == "*") return existingHost}).length > 0) {
-                        tmpGw[`${vs.metadata.namespace}/${gwName}`].gwHosts.serviceHosts.push({serviceName: vs.metadata.name, host: host, serviceLabels: vs.metadata.labels})
+                    if (availibleHosts?.filter(existingHost => {
+                        if (host.match(existingHost.reg)) {return host}
+                    }).length > 0) {
+                        let formattedHostName = host
+                        // ignore port in the host, just leave hostname
+                        if (formattedHostName.search(":")>0) {
+                            formattedHostName = formattedHostName.split(":").at(0)
+                        }
+
+                        tmpGw[`${vs.metadata.namespace}/${gwName}`].gwHosts.serviceHosts.push({serviceName: vs.metadata.name, host: formattedHostName, serviceLabels: vs.metadata.labels})
                     }
                 })
             })
